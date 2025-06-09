@@ -14,6 +14,19 @@ import io.ktor.http.contentType
 class StudentRepositoryImpl(
     private val client: HttpClient
 ) : StudentRepository {
+
+    private var currentStudent: StudentData? = null
+
+    override fun setCurrentStudent(student: StudentData) {
+        currentStudent = student
+    }
+
+    override fun getCurrentStudent(): StudentData? = currentStudent
+
+    override fun clearCurrentStudent() {
+        currentStudent = null
+    }
+
     override suspend fun login(request: LoginRequest): NetworkResult<StudentData> {
         return try {
             val response: LoginResponse = client.post("${BASE_URL}student/auth") {
@@ -22,6 +35,7 @@ class StudentRepositoryImpl(
             }.body()
 
             if (response.success && response.data != null) {
+                setCurrentStudent(response.data)
                 NetworkResult.Success(response.data)
             } else {
                 NetworkResult.Error(response.message)

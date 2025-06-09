@@ -6,4 +6,7 @@ import com.oau.assess.utils.NetworkResult
 
 interface StudentRepository {
     suspend fun login(request: LoginRequest): NetworkResult<StudentData>
+    fun setCurrentStudent(student: StudentData)
+    fun getCurrentStudent(): StudentData?
+    fun clearCurrentStudent()
 }

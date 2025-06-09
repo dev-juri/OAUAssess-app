@@ -11,35 +11,42 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oau.assess.data.Exam
-import com.oau.assess.models.StudentData
-
+import com.oau.assess.screens.student.dashboard.DashboardViewModel
+import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onLogout: () -> Unit,
-    onExamClick: (String) -> Unit
-)
-{
+    onExamClick: (String) -> Unit,
+    viewModel: DashboardViewModel = koinInject<DashboardViewModel>()
+) {
+    val student by viewModel.student.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val shouldLogout by viewModel.shouldLogout.collectAsState()
+
     val exams = listOf(
         Exam(
             id = "cs101",
@@ -64,106 +71,147 @@ fun DashboardScreen(
     val primaryBlue = Color(0xFF2196F3)
     val lightGray = Color(0xFFF5F5F5)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(lightGray)
-    ) {
-        // Top Navigation Bar
-        TopAppBar(
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+    LaunchedEffect(shouldLogout) {
+        if (shouldLogout) {
+            onLogout()
+
+            delay(100)
+            viewModel.onLogoutHandled() // Reset the flag
+        }
+    }
+
+    when {
+        isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        student == null -> {
+            // Show error state with retry option instead of auto-logout
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "🏛️ OAU Assess",
+                        text = "Unable to load student data",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
+                        color = Color.Gray
                     )
-                }
-            },
-            actions = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 16.dp)
-                ) {
-                    NavigationItem("student.fullName", isActive = true)
-
-                    // Profile Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE0E0E0))
-                            .clickable { onLogout() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Logout",
-                            fontSize = 16.sp,
-                            color = Color.Red,
-                            fontWeight = FontWeight.Bold
+                    Button(
+                        onClick = { onLogout() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = primaryBlue
                         )
+                    ) {
+                        Text("Return to Login")
                     }
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.White
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
+            }
+        }
 
-        // Main Content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp)
-        ) {
-            // Page Title
-            Text(
-                text = "Assigned Exams",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            Text(
-                text = "Here are the exams assigned to you. Click on an exam to start or continue.",
-                fontSize = 16.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            // Exams List
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(lightGray)
             ) {
-                items(exams) { exam ->
-                    ExamCard(
-                        exam = exam,
-                        onExamClick = { onExamClick(exam.id) }
+                // Top Navigation Bar
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "🏛️ OAU Assess",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Black
+                            )
+                        }
+                    },
+                    actions = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 16.dp)
+                        ) {
+                            // Profile Avatar
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Color(0xFFE0E0E0))
+                                    .clickable {
+                                        viewModel.logout()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Logout",
+                                    fontSize = 10.sp,
+                                    color = Color.Red,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Main Content
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp)
+                ) {
+                    // Welcome Message with Student Info
+                    Text(
+                        text = "Welcome, ${student!!.fullName}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
+
+                    Text(
+                        text = "Matric No: ${student!!.matricNo}",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+
+                    Text(
+                        text = "Here are the exams assigned to you. Click on an exam to start or continue.",
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    )
+
+                    // Exams List
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        items(exams) { exam ->
+                            ExamCard(
+                                exam = exam,
+                                onExamClick = { onExamClick(exam.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-fun NavigationItem(
-    text: String,
-    isActive: Boolean = false
-) {
-    Text(
-        text = text,
-        fontSize = 14.sp,
-        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-        color = if (isActive) Color.Black else Color.Gray,
-        modifier = Modifier.clickable { /* Handle navigation */ }
-    )
 }
 
 @Composable

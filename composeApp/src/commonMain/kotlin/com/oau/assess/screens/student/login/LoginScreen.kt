@@ -13,12 +13,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.oau.assess.models.StudentData
 import org.koin.compose.koinInject
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (StudentData) -> Unit,
+    onLoginSuccess: () -> Unit,
     viewModel: LoginViewModel = koinInject<LoginViewModel>()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -31,7 +31,10 @@ fun LoginScreen(
 
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.Success) {
-            onLoginSuccess((uiState as LoginUiState.Success).user)
+            onLoginSuccess()
+            // Reset state after a delay to ensure navigation completes
+            delay(100)
+            viewModel.resetState()
         }
     }
 
@@ -53,7 +56,7 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.Start
             ) {
                 Text(
-                    text = "\uD83C\uDFDB️ OAU Assess",
+                    text = "OAU Assess",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.Black

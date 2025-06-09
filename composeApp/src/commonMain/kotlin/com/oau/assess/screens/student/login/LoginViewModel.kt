@@ -45,6 +45,8 @@ class LoginViewModel(
 
             when (val result = repository.login(LoginRequest(matricNo.value, password.value))) {
                 is NetworkResult.Success -> {
+                    // Save the student data before marking as success
+                    repository.setCurrentStudent(result.data)
                     _uiState.value = LoginUiState.Success(result.data)
                 }
                 is NetworkResult.Error -> {
@@ -56,5 +58,9 @@ class LoginViewModel(
                 }
             }
         }
+    }
+
+    fun resetState() {
+        _uiState.value = LoginUiState.Idle
     }
 }

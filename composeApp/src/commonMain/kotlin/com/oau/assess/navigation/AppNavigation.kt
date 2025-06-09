@@ -23,7 +23,7 @@ fun AppNavigation(
         ) {
             composable<Screen.Login> {
                 LoginScreen(
-                    onLoginSuccess = { student ->
+                    onLoginSuccess = {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Login) { inclusive = true }
                         }
@@ -32,8 +32,6 @@ fun AppNavigation(
             }
 
             composable<Screen.Dashboard> { backStackEntry ->
-                //val student = backStackEntry.toRoute<Screen.Dashboard>()
-
                 DashboardScreen(
                     onLogout = {
                         navController.navigate(Screen.Login) {
@@ -45,25 +43,6 @@ fun AppNavigation(
                     }
                 )
             }
-
-            /*        composable<Screen.ExamDetail> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.ExamDetail>()
-                        val examId = route.examId
-                        val student = route.student
-
-                        ExamDetailScreen(
-                            examId = examId,
-                            student = student,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onLogout = {
-                                navController.navigate(Screen.Login) {
-                                    popUpTo(0) { inclusive = true } // Clear entire navigation stack
-                                }
-                            }
-                        )
-                    }*/
         }
 
         // Let external targets bind navigation if needed (e.g. for web back/forward support)
