@@ -12,7 +12,22 @@ sealed class Screen {
     @Serializable
     @SerialName("dashboard")
     data object Dashboard : Screen()
-//
-//    @Serializable
-//    data class ExamDetail(val examId: String, val student: StudentData) : Screen()
+
+    @Serializable
+    @SerialName("mcq")
+    data class McqExam(
+        val studentId: String,
+        val examId: String,
+        val examTitle: String,
+        val duration: Int
+    ) : Screen()
+
+    @Serializable
+    @SerialName("oe")
+    data class OpenEndedExam(
+        val studentId: String,
+        val examId: String,
+        val examTitle: String,
+        val duration: Int
+    ) : Screen()
 }

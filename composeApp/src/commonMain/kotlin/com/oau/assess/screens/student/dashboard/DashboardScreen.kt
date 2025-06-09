@@ -48,7 +48,7 @@ import org.koin.compose.koinInject
 @Composable
 fun DashboardScreen(
     onLogout: () -> Unit,
-    onExamClick: (String) -> Unit,
+    onExamClick: (studentId: String, examId: String, examTitle: String, examType: String, duration: Int) -> Unit,
     viewModel: DashboardViewModel = koinInject<DashboardViewModel>()
 ) {
     val student by viewModel.student.collectAsState()
@@ -344,7 +344,15 @@ fun DashboardScreen(
                             ExamAssignmentCard(
                                 assignment = assignment,
                                 backgroundColor = examColors[colorIndex],
-                                onExamClick = { onExamClick(assignment.examId) }
+                                onExamClick = {
+                                    onExamClick(
+                                        student!!.id,
+                                        assignment.examId,
+                                        assignment.courseName,
+                                        assignment.examType,
+                                        assignment.duration
+                                    )
+                                }
                             )
                         }
                     }
@@ -364,9 +372,9 @@ fun ExamAssignmentCard(
     Card(
         modifier = Modifier.fillMaxWidth()
             .clickable(
-            enabled = false,
-            onClick = { /* no-op when disabled */ }
-        ),
+                enabled = false,
+                onClick = { /* no-op when disabled */ }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
