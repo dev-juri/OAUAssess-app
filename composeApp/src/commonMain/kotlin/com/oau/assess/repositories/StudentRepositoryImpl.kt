@@ -1,14 +1,18 @@
 package com.oau.assess.repositories
 
+import com.oau.assess.data.ExamAssignment
+import com.oau.assess.data.ExamAssignmentsResponse
 import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.LoginResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.utils.NetworkResult
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 
 class StudentRepositoryImpl(
@@ -42,6 +46,28 @@ class StudentRepositoryImpl(
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    override suspend fun getExamAssignments(studentId: String): NetworkResult<List<ExamAssignment>> {
+        return try {
+            val response = client.get("${BASE_URL}student/$studentId/assignments")
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val assignmentsResponse = response.body<ExamAssignmentsResponse>()
+                    if (assignmentsResponse.success) {
+                        NetworkResult.Success(assignmentsResponse.data)
+                    } else {
+                        NetworkResult.Error(assignmentsResponse.message)
+                    }
+                }
+                else -> {
+                    NetworkResult.Error("Failed to fetch exam assignments")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "An error occurred")
         }
     }
 
