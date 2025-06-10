@@ -90,14 +90,18 @@ fun AppNavigation(
             composable<Screen.OpenEndedExam> { backStackEntry ->
                 val openEndedExam = backStackEntry.toRoute<Screen.OpenEndedExam>()
                 OpenEndedExamScreen(
+                    examId = openEndedExam.examId,
                     examTitle = openEndedExam.examTitle,
                     totalDuration = openEndedExam.duration,
-                    onSubmit = { answers ->
+                    onExamComplete = { answers ->
                         // Handle exam submission
                         // You might want to navigate to a results screen or back to dashboard
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Dashboard) { inclusive = true }
                         }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
