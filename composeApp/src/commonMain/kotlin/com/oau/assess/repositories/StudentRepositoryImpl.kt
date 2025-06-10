@@ -1,7 +1,9 @@
 package com.oau.assess.repositories
 
+import com.oau.assess.data.AssignmentQuestionsResponse
 import com.oau.assess.data.ExamAssignment
 import com.oau.assess.data.ExamAssignmentsResponse
+import com.oau.assess.data.Question
 import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.LoginResponse
 import com.oau.assess.models.StudentData
@@ -64,6 +66,31 @@ class StudentRepositoryImpl(
                 }
                 else -> {
                     NetworkResult.Error("Failed to fetch exam assignments")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "An error occurred")
+        }
+    }
+
+    override suspend fun getAssignmentQuestions(
+        studentId: String,
+        examId: String
+    ): NetworkResult<List<Question>> {
+        return try {
+            val response = client.get("${BASE_URL}student/$studentId/assignments/$examId")
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val questionsResponse = response.body<AssignmentQuestionsResponse>()
+                    if (questionsResponse.success) {
+                        NetworkResult.Success(questionsResponse.data)
+                    } else {
+                        NetworkResult.Error(questionsResponse.message)
+                    }
+                }
+                else -> {
+                    NetworkResult.Error("Failed to fetch assignment questions")
                 }
             }
         } catch (e: Exception) {

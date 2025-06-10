@@ -70,15 +70,19 @@ fun AppNavigation(
 
             composable<Screen.McqExam> { backStackEntry ->
                 val mcqExam = backStackEntry.toRoute<Screen.McqExam>()
+
                 McqExamScreen(
+                    examId = mcqExam.examId, // or assignmentId - depending on your Screen data class
                     examTitle = mcqExam.examTitle,
                     totalDuration = mcqExam.duration,
                     onExamComplete = { answers ->
                         // Handle exam completion
-                        // You might want to navigate to a results screen or back to dashboard
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Dashboard) { inclusive = true }
                         }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }

@@ -4,6 +4,7 @@ import LoginViewModel
 import com.oau.assess.repositories.StudentRepository
 import com.oau.assess.repositories.StudentRepositoryImpl
 import com.oau.assess.screens.student.dashboard.DashboardViewModel
+import com.oau.assess.screens.student.test.ExamViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
@@ -33,6 +34,7 @@ val repositoryModule = module {
     single<StudentRepository> { StudentRepositoryImpl(get<HttpClient>()) }
     single<LoginViewModel> { LoginViewModel(get<StudentRepository>()) }
     single<DashboardViewModel> { DashboardViewModel(get()) }
+    single<ExamViewModel> { ExamViewModel(get()) }
 }
 
 val appModule = listOf(
