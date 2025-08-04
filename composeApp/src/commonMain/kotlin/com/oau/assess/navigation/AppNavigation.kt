@@ -34,7 +34,7 @@ fun AppNavigation(
                 )
             }
 
-            composable<Screen.Dashboard> { backStackEntry ->
+            composable<Screen.Dashboard> {
                 DashboardScreen(
                     onLogout = {
                         navController.navigate(Screen.Login) {
@@ -53,7 +53,7 @@ fun AppNavigation(
                                     )
                                 )
                             }
-                            else -> { // McqQuestion or any other type defaults to MCQ
+                            else -> {
                                 navController.navigate(
                                     Screen.McqExam(
                                         studentId = studentId,
@@ -72,11 +72,15 @@ fun AppNavigation(
                 val mcqExam = backStackEntry.toRoute<Screen.McqExam>()
 
                 McqExamScreen(
-                    examId = mcqExam.examId, // or assignmentId - depending on your Screen data class
+                    onLogout = {
+                        navController.navigate(Screen.Login) {
+                            popUpTo(0) { inclusive = true } // Clear entire navigation stack
+                        }
+                    },
+                    examId = mcqExam.examId,
                     examTitle = mcqExam.examTitle,
                     totalDuration = mcqExam.duration,
-                    onExamComplete = { answers ->
-                        // Handle exam completion
+                    onExamComplete = {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Dashboard) { inclusive = true }
                         }
@@ -90,12 +94,15 @@ fun AppNavigation(
             composable<Screen.OpenEndedExam> { backStackEntry ->
                 val openEndedExam = backStackEntry.toRoute<Screen.OpenEndedExam>()
                 OpenEndedExamScreen(
+                    onLogout = {
+                        navController.navigate(Screen.Login) {
+                            popUpTo(0) { inclusive = true } // Clear entire navigation stack
+                        }
+                    },
                     examId = openEndedExam.examId,
                     examTitle = openEndedExam.examTitle,
                     totalDuration = openEndedExam.duration,
-                    onExamComplete = { answers ->
-                        // Handle exam submission
-                        // You might want to navigate to a results screen or back to dashboard
+                    onExamComplete = {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Dashboard) { inclusive = true }
                         }

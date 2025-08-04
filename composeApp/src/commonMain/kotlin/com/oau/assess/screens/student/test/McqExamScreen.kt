@@ -58,6 +58,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun McqExamScreen(
+    onLogout: () -> Unit,
     examId: String,
     examTitle: String,
     totalDuration: Int,
@@ -65,6 +66,7 @@ fun McqExamScreen(
     onExamComplete: (Map<String, String>) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val student by viewModel.student.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val mcqQuestions by viewModel.mcqQuestions.collectAsState()
     val submissionState by viewModel.submissionState.collectAsState()
@@ -78,6 +80,20 @@ fun McqExamScreen(
     // Exit confirmation dialog state
     var showExitDialog by remember { mutableStateOf(false) }
     var showSubmissionDialog by remember { mutableStateOf(false) }
+
+    val shouldLogout by viewModel.shouldLogout.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentStudent()
+    }
+
+    LaunchedEffect(shouldLogout) {
+        if (shouldLogout) {
+            onLogout()
+            delay(100)
+            viewModel.onLogoutHandled()
+        }
+    }
 
     // Load questions when screen is first composed
     LaunchedEffect(examId) {
@@ -211,7 +227,11 @@ fun McqExamScreen(
                 )
             }
             is ExamUiState.Empty -> {
-                EmptyContent()
+                if (student == null) {
+                    viewModel.logout()
+                } else {
+                    EmptyContent()
+                }
             }
         }
     }

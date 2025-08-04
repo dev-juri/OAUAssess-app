@@ -67,11 +67,23 @@ class ExamViewModel(
     private val _oeAnswers = MutableStateFlow<Map<String, String>>(emptyMap())
     val oeAnswers: StateFlow<Map<String, String>> = _oeAnswers.asStateFlow()
 
+    private val _shouldLogout = MutableStateFlow(false)
+    val shouldLogout: StateFlow<Boolean> = _shouldLogout.asStateFlow()
+
     init {
         loadCurrentStudent()
     }
 
-    private fun loadCurrentStudent() {
+    fun logout() {
+        studentRepository.clearCurrentStudent()
+        _shouldLogout.value = true
+    }
+
+    fun onLogoutHandled() {
+        _shouldLogout.value = false
+    }
+
+    fun loadCurrentStudent() {
         val currentStudent = studentRepository.getCurrentStudent()
         _student.value = currentStudent
 

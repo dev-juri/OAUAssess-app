@@ -59,6 +59,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenEndedExamScreen(
+    onLogout: () -> Unit,
     examId: String,
     examTitle: String,
     totalDuration: Int,
@@ -66,6 +67,7 @@ fun OpenEndedExamScreen(
     onExamComplete: (Map<String, String>) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val student by viewModel.student.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val oeQuestions by viewModel.oeQuestions.collectAsState()
     val submissionState by viewModel.submissionState.collectAsState()
@@ -79,6 +81,19 @@ fun OpenEndedExamScreen(
     // Dialog states
     var showExitDialog by remember { mutableStateOf(false) }
     var showSubmissionDialog by remember { mutableStateOf(false) }
+    val shouldLogout by viewModel.shouldLogout.collectAsState()
+
+    LaunchedEffect(shouldLogout) {
+        if (shouldLogout) {
+            onLogout()
+            delay(100)
+            viewModel.onLogoutHandled()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentStudent()
+    }
 
     // Load questions when screen is first composed
     LaunchedEffect(examId) {
@@ -215,7 +230,11 @@ fun OpenEndedExamScreen(
             }
 
             is ExamUiState.Empty -> {
-                EmptyContent()
+                if (student == null) {
+                    viewModel.logout()
+                } else {
+                    EmptyContent()
+                }
             }
         }
     }
