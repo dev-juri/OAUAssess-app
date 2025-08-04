@@ -68,6 +68,11 @@ fun DashboardScreen(
     val primaryBlue = Color(0xFF2196F3)
     val lightGray = Color(0xFFF5F5F5)
 
+    // AUTO-REFRESH: Fetch assignments whenever the screen is composed/resumed
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentStudent()
+    }
+
     LaunchedEffect(shouldLogout) {
         if (shouldLogout) {
             onLogout()

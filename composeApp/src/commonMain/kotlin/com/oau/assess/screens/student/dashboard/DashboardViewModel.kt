@@ -41,7 +41,7 @@ class DashboardViewModel(
         loadCurrentStudent()
     }
 
-    private fun loadCurrentStudent() {
+    fun loadCurrentStudent() {
         _isLoading.value = true
         val currentStudent = studentRepository.getCurrentStudent()
         _student.value = currentStudent
