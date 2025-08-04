@@ -64,6 +64,8 @@ class ExamViewModel(
     private val _mcqAnswers = MutableStateFlow<Map<String, String>>(emptyMap())
     val mcqAnswers: StateFlow<Map<String, String>> = _mcqAnswers.asStateFlow()
 
+    private val _oeAnswers = MutableStateFlow<Map<String, String>>(emptyMap())
+    val oeAnswers: StateFlow<Map<String, String>> = _oeAnswers.asStateFlow()
 
     init {
         loadCurrentStudent()
@@ -124,15 +126,12 @@ class ExamViewModel(
         _oeQuestions.value = questions.filterIsInstance<OeQuestion>()
     }
 
-    // MCQ Answer Management
     fun updateMcqAnswer(questionId: String, answer: String) {
         val currentAnswers = _mcqAnswers.value.toMutableMap()
         currentAnswers[questionId] = answer
         _mcqAnswers.value = currentAnswers
     }
 
-
-    // MCQ Submission
     fun submitMcqExam(examType: ExamType) {
         val currentStudent = _student.value
         val examId = _currentExamId.value
@@ -147,18 +146,29 @@ class ExamViewModel(
             return
         }
 
-        val answers = _mcqAnswers.value
-        if (answers.isEmpty()) {
-            _submissionState.value = SubmissionUiState.Error("Please answer at least one question")
-            return
-        }
+        val answers = if(examType == ExamType.MCQ) _mcqAnswers.value else _oeAnswers.value
+//        if (answers.isEmpty()) {
+//            _submissionState.value = SubmissionUiState.Error("Please answer at least one question")
+//            return
+//        }
 
-        // Convert answers to McqResponse list
         val responses = answers.map { (questionId, answer) ->
             QuestionResponse(questionId = questionId, answer = answer)
         }
 
         submitExam(examId, currentStudent.id, responses, examType)
+    }
+
+    fun updateOeAnswer(questionId: String, answer: String) {
+        _oeAnswers.value += (questionId to answer)
+    }
+
+    fun getAnsweredOeQuestionsCount(): Int {
+        return _oeAnswers.value.count { it.value.isNotBlank() }
+    }
+
+    fun getTotalOeQuestionsCount(): Int {
+        return _oeQuestions.value.size
     }
 
     private fun submitExam(
@@ -221,6 +231,7 @@ class ExamViewModel(
         _isLoading.value = false
         _mcqAnswers.value = emptyMap()
         _submissionState.value = SubmissionUiState.Idle
+        _oeAnswers.value = emptyMap()
     }
 
     override fun onCleared() {

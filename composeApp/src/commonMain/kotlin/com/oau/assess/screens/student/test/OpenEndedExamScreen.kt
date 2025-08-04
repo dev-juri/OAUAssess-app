@@ -68,15 +68,17 @@ fun OpenEndedExamScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val oeQuestions by viewModel.oeQuestions.collectAsState()
+    val submissionState by viewModel.submissionState.collectAsState()
+    val oeAnswers by viewModel.oeAnswers.collectAsState()
 
     // State management with examId key to prevent unnecessary resets
     var currentQuestionIndex by remember(examId) { mutableStateOf(0) }
-    var answers by remember(examId) { mutableStateOf(mapOf<String, String>()) }
     var timeRemaining by remember(examId) { mutableStateOf(totalDuration * 60) }
     var isTimerActive by remember(examId) { mutableStateOf(false) }
 
-    // Exit confirmation dialog state
+    // Dialog states
     var showExitDialog by remember { mutableStateOf(false) }
+    var showSubmissionDialog by remember { mutableStateOf(false) }
 
     // Load questions when screen is first composed
     LaunchedEffect(examId) {
@@ -96,9 +98,20 @@ fun OpenEndedExamScreen(
             delay(1000)
             timeRemaining = (timeRemaining - 1).coerceAtLeast(0)
         } else if (timeRemaining <= 0 && isTimerActive) {
-            // Time's up - submit exam
+            // Time's up - submit exam automatically
             isTimerActive = false
             viewModel.submitMcqExam(ExamType.OE)
+        }
+    }
+
+    // Handle submission success
+    LaunchedEffect(submissionState) {
+        when (submissionState) {
+            is SubmissionUiState.Success -> {
+                isTimerActive = false
+                onExamComplete(oeAnswers)
+            }
+            else -> {}
         }
     }
 
@@ -179,18 +192,17 @@ fun OpenEndedExamScreen(
                         examTitle = examTitle,
                         questions = oeQuestions,
                         currentQuestionIndex = currentQuestionIndex,
-                        answers = answers,
+                        answers = oeAnswers,
                         onQuestionIndexChange = { index ->
                             currentQuestionIndex = index
                         },
                         onAnswerChange = { questionId, answer ->
-                            answers = answers + (questionId to answer)
+                            viewModel.updateOeAnswer(questionId, answer)
                         },
-                        onExamComplete = {
-                            isTimerActive = false
-                            viewModel.submitMcqExam(ExamType.OE)
-                            onExamComplete(answers)
-                        }
+                        onExamSubmit = {
+                            showSubmissionDialog = true
+                        },
+                        submissionState = submissionState
                     )
                 }
             }
@@ -208,20 +220,108 @@ fun OpenEndedExamScreen(
         }
     }
 
-    // Exit Confirmation Dialog
+    // Exit Confirmation Dialog - with automatic submission
     if (showExitDialog) {
         ExitConfirmationDialog(
             onConfirmExit = {
                 showExitDialog = false
                 isTimerActive = false
-                onNavigateBack()
+                // Submit exam before exiting
+                viewModel.submitMcqExam(ExamType.OE)
+                // Note: Navigation will happen via submissionState success handler
             },
             onDismiss = {
                 showExitDialog = false
             },
-            answeredQuestions = answers.count { it.value.isNotBlank() },
-            totalQuestions = oeQuestions.size
+            answeredQuestions = viewModel.getAnsweredOeQuestionsCount(),
+            totalQuestions = viewModel.getTotalOeQuestionsCount()
         )
+    }
+
+    // Submission Confirmation Dialog
+    if (showSubmissionDialog) {
+        SubmissionConfirmationDialog(
+            onConfirmSubmit = {
+                showSubmissionDialog = false
+                isTimerActive = false
+                viewModel.submitMcqExam(ExamType.OE)
+            },
+            onDismiss = {
+                showSubmissionDialog = false
+            },
+            answeredQuestions = viewModel.getAnsweredOeQuestionsCount(),
+            totalQuestions = viewModel.getTotalOeQuestionsCount()
+        )
+    }
+
+    // Submission Loading/Error Dialog
+    when (submissionState) {
+        is SubmissionUiState.Loading -> {
+            AlertDialog(
+                onDismissRequest = { },
+                title = {
+                    Text(
+                        text = "Submitting Exam",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color(0xFF2196F3)
+                        )
+                        Text("Please wait while we submit your exam...")
+                    }
+                },
+                confirmButton = { },
+                containerColor = Color.White
+            )
+        }
+        is SubmissionUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.resetSubmissionState()
+                },
+                title = {
+                    Text(
+                        text = "Submission Failed",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+                },
+                text = {
+                    Text((submissionState as SubmissionUiState.Error).message)
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.resetSubmissionState()
+                            viewModel.submitMcqExam(ExamType.OE) // Retry submission
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3)
+                        )
+                    ) {
+                        Text("Retry")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.resetSubmissionState()
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color.White
+            )
+        }
+        else -> {}
     }
 }
 
@@ -233,7 +333,8 @@ private fun OpenEndedContent(
     answers: Map<String, String>,
     onQuestionIndexChange: (Int) -> Unit,
     onAnswerChange: (String, String) -> Unit,
-    onExamComplete: () -> Unit
+    onExamSubmit: () -> Unit,
+    submissionState: SubmissionUiState
 ) {
     val currentQuestion = questions[currentQuestionIndex]
     var currentAnswer by remember(currentQuestion.id) {
@@ -303,6 +404,7 @@ private fun OpenEndedContent(
                         color = Color.Gray
                     )
                 },
+                enabled = submissionState !is SubmissionUiState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(350.dp),
@@ -346,7 +448,7 @@ private fun OpenEndedContent(
                         onQuestionIndexChange(currentQuestionIndex - 1)
                     }
                 },
-                enabled = currentQuestionIndex > 0,
+                enabled = currentQuestionIndex > 0 && submissionState !is SubmissionUiState.Loading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color.Black,
@@ -366,10 +468,11 @@ private fun OpenEndedContent(
                     if (currentQuestionIndex < questions.size - 1) {
                         onQuestionIndexChange(currentQuestionIndex + 1)
                     } else {
-                        // Last question - submit exam
-                        onExamComplete()
+                        // Last question - show submission dialog
+                        onExamSubmit()
                     }
                 },
+                enabled = submissionState !is SubmissionUiState.Loading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2196F3)
                 ),
@@ -403,11 +506,87 @@ private fun OpenEndedContent(
                             },
                             shape = CircleShape
                         )
-                        .clickable { onQuestionIndexChange(index) }
+                        .clickable {
+                            if (submissionState !is SubmissionUiState.Loading) {
+                                onQuestionIndexChange(index)
+                            }
+                        }
                 )
             }
         }
     }
+}
+
+@Composable
+private fun SubmissionConfirmationDialog(
+    onConfirmSubmit: () -> Unit,
+    onDismiss: () -> Unit,
+    answeredQuestions: Int,
+    totalQuestions: Int
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Submit Exam?",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Are you sure you want to submit your exam?",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = "Progress: $answeredQuestions of $totalQuestions questions answered",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (answeredQuestions < totalQuestions) {
+                    Text(
+                        text = "⚠️ You have ${totalQuestions - answeredQuestions} unanswered questions.",
+                        fontSize = 14.sp,
+                        color = Color(0xFFFF9800),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmSubmit,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Submit Exam",
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Color(0xFF2196F3)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Continue Exam",
+                    color = Color(0xFF2196F3),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Composable
@@ -428,7 +607,7 @@ private fun ExitConfirmationDialog(
         },
         title = {
             Text(
-                text = "Exit Exam?",
+                text = "Exit and Submit Exam?",
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             )
@@ -447,9 +626,9 @@ private fun ExitConfirmationDialog(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    text = "⚠️ Your progress will be lost and cannot be recovered.",
+                    text = "📝 Your exam will be automatically submitted before exiting.",
                     fontSize = 14.sp,
-                    color = Color.Red,
+                    color = Color(0xFFFF9800),
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -458,12 +637,12 @@ private fun ExitConfirmationDialog(
             Button(
                 onClick = onConfirmExit,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red
+                    containerColor = Color(0xFFFF9800)
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "Exit Exam",
+                    text = "Submit & Exit",
                     color = Color.White,
                     fontWeight = FontWeight.Medium
                 )
