@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.oau.assess.screens.admin.dashboard.AdminDashboardScreen
+import com.oau.assess.screens.admin.login.AdminLoginScreen
 import com.oau.assess.screens.student.test.McqExamScreen
 import com.oau.assess.screens.student.test.OpenEndedExamScreen
 import org.koin.compose.KoinContext
@@ -109,6 +111,27 @@ fun AppNavigation(
                     },
                     onNavigateBack = {
                         navController.popBackStack()
+                    }
+                )
+            }
+
+            // Admin flow
+            composable<Screen.AdminLogin> {
+                AdminLoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(Screen.AdminLogin) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable<Screen.AdminDashboard> {
+                AdminDashboardScreen(
+                    onLogout = {
+                        navController.navigate(Screen.AdminLogin) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

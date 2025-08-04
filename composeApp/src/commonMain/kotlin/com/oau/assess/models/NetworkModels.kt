@@ -45,3 +45,23 @@ data class SubmissionResponse(
     val success: Boolean,
     val message: String
 )
+
+
+// Admin Models
+@Serializable
+data class AdminLoginRequest(
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class AdminLoginResponse(
+    val success: Boolean,
+    val message: String,
+    val data: AdminToken
+)
+
+@Serializable
+data class AdminToken(
+    val accessToken: String
+)

@@ -30,4 +30,13 @@ sealed class Screen {
         val examTitle: String,
         val duration: Int
     ) : Screen()
+
+    // Admin Flow
+    @Serializable
+    @SerialName("admin/auth")
+    data object AdminLogin : Screen()
+
+    @Serializable
+    @SerialName("admin/dashboard")
+    data object AdminDashboard : Screen()
 }
