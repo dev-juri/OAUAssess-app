@@ -1,4 +1,4 @@
-package com.oau.assess.repositories
+package com.oau.assess.repositories.student
 
 import com.oau.assess.data.AssignmentQuestionsResponse
 import com.oau.assess.data.ExamAssignment

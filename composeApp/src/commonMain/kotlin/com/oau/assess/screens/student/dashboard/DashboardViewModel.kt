@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oau.assess.data.ExamAssignment
 import com.oau.assess.models.StudentData
-import com.oau.assess.repositories.StudentRepository
+import com.oau.assess.repositories.student.StudentRepository
 import com.oau.assess.utils.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

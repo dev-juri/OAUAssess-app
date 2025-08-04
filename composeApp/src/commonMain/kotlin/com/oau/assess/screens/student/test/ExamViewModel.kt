@@ -7,7 +7,7 @@ import com.oau.assess.data.McqQuestion
 import com.oau.assess.data.OeQuestion
 import com.oau.assess.models.QuestionResponse
 import com.oau.assess.models.StudentData
-import com.oau.assess.repositories.StudentRepository
+import com.oau.assess.repositories.student.StudentRepository
 import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow

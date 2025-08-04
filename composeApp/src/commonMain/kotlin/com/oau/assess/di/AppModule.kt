@@ -1,8 +1,10 @@
 package com.oau.assess.di
 
 import LoginViewModel
-import com.oau.assess.repositories.StudentRepository
-import com.oau.assess.repositories.StudentRepositoryImpl
+import com.oau.assess.repositories.admin.AdminRepository
+import com.oau.assess.repositories.admin.AdminRepositoryImpl
+import com.oau.assess.repositories.student.StudentRepository
+import com.oau.assess.repositories.student.StudentRepositoryImpl
 import com.oau.assess.screens.student.dashboard.DashboardViewModel
 import com.oau.assess.screens.student.test.ExamViewModel
 import io.ktor.client.HttpClient
@@ -32,6 +34,8 @@ val networkModule = module {
 
 val repositoryModule = module {
     single<StudentRepository> { StudentRepositoryImpl(get<HttpClient>()) }
+    single<AdminRepository> { AdminRepositoryImpl(get<HttpClient>())}
+
     single<LoginViewModel> { LoginViewModel(get<StudentRepository>()) }
     single<DashboardViewModel> { DashboardViewModel(get()) }
     single<ExamViewModel> { ExamViewModel(get()) }
