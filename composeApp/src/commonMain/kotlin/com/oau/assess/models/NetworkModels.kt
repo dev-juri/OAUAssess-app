@@ -28,20 +28,20 @@ data class StudentData(
 )
 
 @Serializable
-data class McqSubmissionRequest(
+data class SubmissionRequest(
     val examId: String,
     val studentId: String,
-    val responses: List<McqResponse>
+    val responses: List<QuestionResponse>
 )
 
 @Serializable
-data class McqResponse(
+data class QuestionResponse(
     val questionId: String,
     val answer: String
 )
 
 @Serializable
-data class McqSubmissionResponse(
+data class SubmissionResponse(
     val success: Boolean,
     val message: String
 )

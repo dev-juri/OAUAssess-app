@@ -3,8 +3,8 @@ package com.oau.assess.repositories
 import com.oau.assess.data.ExamAssignment
 import com.oau.assess.data.Question
 import com.oau.assess.models.LoginRequest
-import com.oau.assess.models.McqResponse
-import com.oau.assess.models.McqSubmissionResponse
+import com.oau.assess.models.QuestionResponse
+import com.oau.assess.models.SubmissionResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.utils.NetworkResult
 
@@ -23,6 +23,6 @@ interface StudentRepository {
     suspend fun submitMcqExam(
         examId: String,
         studentId: String,
-        responses: List<McqResponse>
-    ): Result<McqSubmissionResponse>
+        responses: List<QuestionResponse>
+    ): Result<SubmissionResponse>
 }

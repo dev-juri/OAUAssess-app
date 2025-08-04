@@ -6,9 +6,9 @@ import com.oau.assess.data.ExamAssignmentsResponse
 import com.oau.assess.data.Question
 import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.LoginResponse
-import com.oau.assess.models.McqResponse
-import com.oau.assess.models.McqSubmissionRequest
-import com.oau.assess.models.McqSubmissionResponse
+import com.oau.assess.models.QuestionResponse
+import com.oau.assess.models.SubmissionRequest
+import com.oau.assess.models.SubmissionResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.utils.NetworkResult
 import io.ktor.client.HttpClient
@@ -104,10 +104,10 @@ class StudentRepositoryImpl(
     override suspend fun submitMcqExam(
         examId: String,
         studentId: String,
-        responses: List<McqResponse>
-    ): Result<McqSubmissionResponse> {
+        responses: List<QuestionResponse>
+    ): Result<SubmissionResponse> {
         return try {
-            val request = McqSubmissionRequest(
+            val request = SubmissionRequest(
                 examId = examId,
                 studentId = studentId,
                 responses = responses
@@ -120,7 +120,7 @@ class StudentRepositoryImpl(
 
             when (response.status) {
                 HttpStatusCode.OK -> {
-                    val submissionResponse = response.body<McqSubmissionResponse>()
+                    val submissionResponse = response.body<SubmissionResponse>()
                     Result.success(submissionResponse)
                 }
                 else -> {

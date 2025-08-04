@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.oau.assess.data.Question
 import com.oau.assess.data.McqQuestion
 import com.oau.assess.data.OeQuestion
-import com.oau.assess.models.McqResponse
+import com.oau.assess.models.QuestionResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.repositories.StudentRepository
 import com.oau.assess.utils.NetworkResult
@@ -130,9 +130,6 @@ class ExamViewModel(
         _mcqAnswers.value = currentAnswers
     }
 
-    fun getMcqAnswer(questionId: String): String? {
-        return _mcqAnswers.value[questionId]
-    }
 
     // MCQ Submission
     fun submitMcqExam() {
@@ -157,7 +154,7 @@ class ExamViewModel(
 
         // Convert answers to McqResponse list
         val responses = answers.map { (questionId, answer) ->
-            McqResponse(questionId = questionId, answer = answer)
+            QuestionResponse(questionId = questionId, answer = answer)
         }
 
         submitMcqExam(examId, currentStudent.id, responses)
@@ -166,7 +163,7 @@ class ExamViewModel(
     private fun submitMcqExam(
         examId: String,
         studentId: String,
-        responses: List<McqResponse>
+        responses: List<QuestionResponse>
     ) {
         viewModelScope.launch {
             _submissionState.value = SubmissionUiState.Loading
@@ -188,13 +185,6 @@ class ExamViewModel(
                     )
                 }
         }
-    }
-
-    // Check if all MCQ questions are answered
-    fun areAllMcqQuestionsAnswered(): Boolean {
-        val mcqQuestionIds = _mcqQuestions.value.map { it.id }
-        val answeredQuestionIds = _mcqAnswers.value.keys
-        return mcqQuestionIds.all { it in answeredQuestionIds }
     }
 
     // Get answered questions count
