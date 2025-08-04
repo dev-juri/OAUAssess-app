@@ -8,6 +8,7 @@ import com.oau.assess.data.OeQuestion
 import com.oau.assess.models.QuestionResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.repositories.StudentRepository
+import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -132,7 +133,7 @@ class ExamViewModel(
 
 
     // MCQ Submission
-    fun submitMcqExam() {
+    fun submitMcqExam(examType: ExamType) {
         val currentStudent = _student.value
         val examId = _currentExamId.value
 
@@ -157,18 +158,19 @@ class ExamViewModel(
             QuestionResponse(questionId = questionId, answer = answer)
         }
 
-        submitMcqExam(examId, currentStudent.id, responses)
+        submitExam(examId, currentStudent.id, responses, examType)
     }
 
-    private fun submitMcqExam(
+    private fun submitExam(
         examId: String,
         studentId: String,
-        responses: List<QuestionResponse>
+        responses: List<QuestionResponse>,
+        examType: ExamType
     ) {
         viewModelScope.launch {
             _submissionState.value = SubmissionUiState.Loading
 
-            studentRepository.submitMcqExam(examId, studentId, responses)
+            studentRepository.submitExam(examId, studentId, responses, examType)
                 .onSuccess { response ->
                     if (response.success) {
                         _submissionState.value = SubmissionUiState.Success(response.message)

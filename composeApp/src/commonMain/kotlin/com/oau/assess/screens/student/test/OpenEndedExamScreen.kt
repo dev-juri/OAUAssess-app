@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oau.assess.data.OeQuestion
+import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.formatTime
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
@@ -97,7 +98,7 @@ fun OpenEndedExamScreen(
         } else if (timeRemaining <= 0 && isTimerActive) {
             // Time's up - submit exam
             isTimerActive = false
-            onExamComplete(answers)
+            viewModel.submitMcqExam(ExamType.OE)
         }
     }
 
@@ -187,6 +188,7 @@ fun OpenEndedExamScreen(
                         },
                         onExamComplete = {
                             isTimerActive = false
+                            viewModel.submitMcqExam(ExamType.OE)
                             onExamComplete(answers)
                         }
                     )

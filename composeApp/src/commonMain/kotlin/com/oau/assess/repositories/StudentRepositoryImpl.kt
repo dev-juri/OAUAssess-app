@@ -10,6 +10,7 @@ import com.oau.assess.models.QuestionResponse
 import com.oau.assess.models.SubmissionRequest
 import com.oau.assess.models.SubmissionResponse
 import com.oau.assess.models.StudentData
+import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.NetworkResult
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -101,10 +102,11 @@ class StudentRepositoryImpl(
         }
     }
 
-    override suspend fun submitMcqExam(
+    override suspend fun submitExam(
         examId: String,
         studentId: String,
-        responses: List<QuestionResponse>
+        responses: List<QuestionResponse>,
+        type: ExamType
     ): Result<SubmissionResponse> {
         return try {
             val request = SubmissionRequest(
@@ -113,7 +115,7 @@ class StudentRepositoryImpl(
                 responses = responses
             )
 
-            val response = client.post("${BASE_URL}student/submit/mcq") {
+            val response = client.post("${BASE_URL}student/submit/${type.name.lowercase()}") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }

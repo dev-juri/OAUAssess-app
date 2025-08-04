@@ -50,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oau.assess.data.McqQuestion
+import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.formatTime
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
@@ -98,7 +99,7 @@ fun McqExamScreen(
         } else if (timeRemaining <= 0 && isTimerActive) {
             // Time's up - submit exam automatically
             isTimerActive = false
-            viewModel.submitMcqExam()
+            viewModel.submitMcqExam(ExamType.MCQ)
         }
     }
 
@@ -237,7 +238,7 @@ fun McqExamScreen(
             onConfirmSubmit = {
                 showSubmissionDialog = false
                 isTimerActive = false
-                viewModel.submitMcqExam()
+                viewModel.submitMcqExam(ExamType.MCQ)
             },
             onDismiss = {
                 showSubmissionDialog = false
@@ -293,7 +294,7 @@ fun McqExamScreen(
                     Button(
                         onClick = {
                             viewModel.resetSubmissionState()
-                            viewModel.submitMcqExam() // Retry submission
+                            viewModel.submitMcqExam(ExamType.MCQ) // Retry submission
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF2196F3)

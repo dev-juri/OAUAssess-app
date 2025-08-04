@@ -6,6 +6,7 @@ import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.QuestionResponse
 import com.oau.assess.models.SubmissionResponse
 import com.oau.assess.models.StudentData
+import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.NetworkResult
 
 interface StudentRepository {
@@ -20,9 +21,11 @@ interface StudentRepository {
         examId: String
     ): NetworkResult<List<Question>>
 
-    suspend fun submitMcqExam(
+    suspend fun submitExam(
         examId: String,
         studentId: String,
-        responses: List<QuestionResponse>
+        responses: List<QuestionResponse>,
+        type: ExamType
     ): Result<SubmissionResponse>
+
 }
