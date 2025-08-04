@@ -26,3 +26,22 @@ data class StudentData(
     @SerialName("__v")
     val version: Int
 )
+
+@Serializable
+data class McqSubmissionRequest(
+    val examId: String,
+    val studentId: String,
+    val responses: List<McqResponse>
+)
+
+@Serializable
+data class McqResponse(
+    val questionId: String,
+    val answer: String
+)
+
+@Serializable
+data class McqSubmissionResponse(
+    val success: Boolean,
+    val message: String
+)

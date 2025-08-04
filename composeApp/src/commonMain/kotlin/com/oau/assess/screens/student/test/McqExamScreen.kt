@@ -66,15 +66,17 @@ fun McqExamScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val mcqQuestions by viewModel.mcqQuestions.collectAsState()
+    val submissionState by viewModel.submissionState.collectAsState()
+    val mcqAnswers by viewModel.mcqAnswers.collectAsState()
 
     // State management with examId key to prevent unnecessary resets
     var currentQuestionIndex by remember(examId) { mutableStateOf(0) }
-    var selectedAnswers by remember(examId) { mutableStateOf(mapOf<String, String>()) }
     var timeRemaining by remember(examId) { mutableStateOf(totalDuration * 60) }
     var isTimerActive by remember(examId) { mutableStateOf(false) }
 
     // Exit confirmation dialog state
     var showExitDialog by remember { mutableStateOf(false) }
+    var showSubmissionDialog by remember { mutableStateOf(false) }
 
     // Load questions when screen is first composed
     LaunchedEffect(examId) {
@@ -94,9 +96,20 @@ fun McqExamScreen(
             delay(1000)
             timeRemaining = (timeRemaining - 1).coerceAtLeast(0)
         } else if (timeRemaining <= 0 && isTimerActive) {
-            // Time's up - submit exam
+            // Time's up - submit exam automatically
             isTimerActive = false
-            onExamComplete(selectedAnswers)
+            viewModel.submitMcqExam()
+        }
+    }
+
+    // Handle submission success
+    LaunchedEffect(submissionState) {
+        when (submissionState) {
+            is SubmissionUiState.Success -> {
+                isTimerActive = false
+                onExamComplete(mcqAnswers)
+            }
+            else -> {}
         }
     }
 
@@ -176,17 +189,17 @@ fun McqExamScreen(
                         examTitle = examTitle,
                         questions = mcqQuestions,
                         currentQuestionIndex = currentQuestionIndex,
-                        selectedAnswers = selectedAnswers,
+                        selectedAnswers = mcqAnswers,
                         onQuestionIndexChange = { index ->
                             currentQuestionIndex = index
                         },
-                        onAnswerSelect = { questionId, optionIndex ->
-                            selectedAnswers = selectedAnswers + (questionId to optionIndex.toString())
+                        onAnswerSelect = { questionId, optionText ->
+                            viewModel.updateMcqAnswer(questionId, optionText)
                         },
-                        onExamComplete = {
-                            isTimerActive = false
-                            onExamComplete(selectedAnswers)
-                        }
+                        onExamSubmit = {
+                            showSubmissionDialog = true
+                        },
+                        submissionState = submissionState
                     )
                 }
             }
@@ -213,9 +226,322 @@ fun McqExamScreen(
             onDismiss = {
                 showExitDialog = false
             },
-            answeredQuestions = selectedAnswers.size,
-            totalQuestions = mcqQuestions.size
+            answeredQuestions = viewModel.getAnsweredQuestionsCount(),
+            totalQuestions = viewModel.getTotalMcqQuestionsCount()
         )
+    }
+
+    // Submission Confirmation Dialog
+    if (showSubmissionDialog) {
+        SubmissionConfirmationDialog(
+            onConfirmSubmit = {
+                showSubmissionDialog = false
+                isTimerActive = false
+                viewModel.submitMcqExam()
+            },
+            onDismiss = {
+                showSubmissionDialog = false
+            },
+            answeredQuestions = viewModel.getAnsweredQuestionsCount(),
+            totalQuestions = viewModel.getTotalMcqQuestionsCount()
+        )
+    }
+
+    // Submission Loading/Error Dialog
+    when (submissionState) {
+        is SubmissionUiState.Loading -> {
+            AlertDialog(
+                onDismissRequest = { },
+                title = {
+                    Text(
+                        text = "Submitting Exam",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color(0xFF2196F3)
+                        )
+                        Text("Please wait while we submit your exam...")
+                    }
+                },
+                confirmButton = { },
+                containerColor = Color.White
+            )
+        }
+        is SubmissionUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.resetSubmissionState()
+                },
+                title = {
+                    Text(
+                        text = "Submission Failed",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+                },
+                text = {
+                    Text((submissionState as SubmissionUiState.Error).message)
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.resetSubmissionState()
+                            viewModel.submitMcqExam() // Retry submission
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3)
+                        )
+                    ) {
+                        Text("Retry")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.resetSubmissionState()
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color.White
+            )
+        }
+        else -> {}
+    }
+}
+
+@Composable
+private fun SubmissionConfirmationDialog(
+    onConfirmSubmit: () -> Unit,
+    onDismiss: () -> Unit,
+    answeredQuestions: Int,
+    totalQuestions: Int
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Submit Exam?",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Are you sure you want to submit your exam?",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = "Progress: $answeredQuestions of $totalQuestions questions answered",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (answeredQuestions < totalQuestions) {
+                    Text(
+                        text = "⚠️ You have ${totalQuestions - answeredQuestions} unanswered questions.",
+                        fontSize = 14.sp,
+                        color = Color(0xFFFF9800),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmSubmit,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Submit Exam",
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Color(0xFF2196F3)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Continue Exam",
+                    color = Color(0xFF2196F3),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+private fun ExamContent(
+    examTitle: String,
+    questions: List<McqQuestion>,
+    currentQuestionIndex: Int,
+    selectedAnswers: Map<String, String>,
+    onQuestionIndexChange: (Int) -> Unit,
+    onAnswerSelect: (String, String) -> Unit,
+    onExamSubmit: () -> Unit,
+    submissionState: SubmissionUiState
+) {
+    val currentQuestion = questions[currentQuestionIndex]
+    val selectedOption = selectedAnswers[currentQuestion.id]
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Exam Title and Progress
+        Text(
+            text = examTitle,
+            fontSize = 14.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Question Counter
+        Text(
+            text = "Question ${currentQuestionIndex + 1} of ${questions.size}",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Progress Indicator
+        LinearProgressIndicator(
+            progress = { (currentQuestionIndex + 1).toFloat() / questions.size },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .padding(bottom = 32.dp),
+            color = Color(0xFF2196F3),
+            trackColor = Color(0xFFE0E0E0),
+        )
+
+        // Question Text
+        Text(
+            text = currentQuestion.question,
+            fontSize = 18.sp,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
+
+        // Options
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            currentQuestion.options.forEach { option ->
+                OptionCard(
+                    optionText = option,
+                    isSelected = selectedOption == option,
+                    onSelect = {
+                        onAnswerSelect(currentQuestion.id, option)
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Navigation Buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(
+                onClick = {
+                    if (currentQuestionIndex > 0) {
+                        onQuestionIndexChange(currentQuestionIndex - 1)
+                    }
+                },
+                enabled = currentQuestionIndex > 0 && submissionState !is SubmissionUiState.Loading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black,
+                    disabledContainerColor = Color(0xFFE0E0E0)
+                ),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(
+                    text = "Previous",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Button(
+                onClick = {
+                    if (currentQuestionIndex < questions.size - 1) {
+                        onQuestionIndexChange(currentQuestionIndex + 1)
+                    } else {
+                        // Last question - show submission dialog
+                        onExamSubmit()
+                    }
+                },
+                enabled = submissionState !is SubmissionUiState.Loading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2196F3)
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(
+                    text = if (currentQuestionIndex == questions.size - 1) "Submit" else "Next",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        // Question Navigation Dots
+        Spacer(modifier = Modifier.height(24.dp))
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            questions.forEachIndexed { index, question ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(8.dp)
+                        .background(
+                            color = when {
+                                index == currentQuestionIndex -> Color(0xFF2196F3)
+                                selectedAnswers.containsKey(question.id) -> Color(0xFF4CAF50)
+                                else -> Color(0xFFE0E0E0)
+                            },
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            if (submissionState !is SubmissionUiState.Loading) {
+                                onQuestionIndexChange(index)
+                            }
+                        }
+                )
+            }
+        }
     }
 }
 
@@ -391,155 +717,6 @@ private fun EmptyMcqContent() {
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
-        }
-    }
-}
-
-@Composable
-private fun ExamContent(
-    examTitle: String,
-    questions: List<McqQuestion>,
-    currentQuestionIndex: Int,
-    selectedAnswers: Map<String, String>,
-    onQuestionIndexChange: (Int) -> Unit,
-    onAnswerSelect: (String, Int) -> Unit,
-    onExamComplete: () -> Unit
-) {
-    val currentQuestion = questions[currentQuestionIndex]
-    val selectedOption = selectedAnswers[currentQuestion.id]?.toIntOrNull()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Exam Title and Progress
-        Text(
-            text = examTitle,
-            fontSize = 14.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        // Question Counter
-        Text(
-            text = "Question ${currentQuestionIndex + 1} of ${questions.size}",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        // Progress Indicator
-        LinearProgressIndicator(
-            progress = { (currentQuestionIndex + 1).toFloat() / questions.size },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .padding(bottom = 32.dp),
-            color = Color(0xFF2196F3),
-            trackColor = Color(0xFFE0E0E0),
-        )
-
-        // Question Text
-        Text(
-            text = currentQuestion.question,
-            fontSize = 18.sp,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Options
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            currentQuestion.options.forEachIndexed { index, option ->
-                OptionCard(
-                    optionText = option,
-                    isSelected = selectedOption == index,
-                    onSelect = {
-                        onAnswerSelect(currentQuestion.id, index)
-                    }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Navigation Buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Button(
-                onClick = {
-                    if (currentQuestionIndex > 0) {
-                        onQuestionIndexChange(currentQuestionIndex - 1)
-                    }
-                },
-                enabled = currentQuestionIndex > 0,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black,
-                    disabledContainerColor = Color(0xFFE0E0E0)
-                ),
-                modifier = Modifier.height(48.dp)
-            ) {
-                Text(
-                    text = "Previous",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Button(
-                onClick = {
-                    if (currentQuestionIndex < questions.size - 1) {
-                        onQuestionIndexChange(currentQuestionIndex + 1)
-                    } else {
-                        // Last question - submit exam
-                        onExamComplete()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.height(48.dp)
-            ) {
-                Text(
-                    text = if (currentQuestionIndex == questions.size - 1) "Submit" else "Next",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        // Question Navigation Dots
-        Spacer(modifier = Modifier.height(24.dp))
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            questions.forEachIndexed { index, question ->
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(8.dp)
-                        .background(
-                            color = when {
-                                index == currentQuestionIndex -> Color(0xFF2196F3)
-                                selectedAnswers.containsKey(question.id) -> Color(0xFF4CAF50)
-                                else -> Color(0xFFE0E0E0)
-                            },
-                            shape = CircleShape
-                        )
-                        .clickable { onQuestionIndexChange(index) }
-                )
-            }
         }
     }
 }

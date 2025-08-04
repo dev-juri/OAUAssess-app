@@ -6,6 +6,9 @@ import com.oau.assess.data.ExamAssignmentsResponse
 import com.oau.assess.data.Question
 import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.LoginResponse
+import com.oau.assess.models.McqResponse
+import com.oau.assess.models.McqSubmissionRequest
+import com.oau.assess.models.McqSubmissionResponse
 import com.oau.assess.models.StudentData
 import com.oau.assess.utils.NetworkResult
 import io.ktor.client.HttpClient
@@ -95,6 +98,37 @@ class StudentRepositoryImpl(
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "An error occurred")
+        }
+    }
+
+    override suspend fun submitMcqExam(
+        examId: String,
+        studentId: String,
+        responses: List<McqResponse>
+    ): Result<McqSubmissionResponse> {
+        return try {
+            val request = McqSubmissionRequest(
+                examId = examId,
+                studentId = studentId,
+                responses = responses
+            )
+
+            val response = client.post("${BASE_URL}student/submit/mcq") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val submissionResponse = response.body<McqSubmissionResponse>()
+                    Result.success(submissionResponse)
+                }
+                else -> {
+                    Result.failure(Exception("Failed to submit exam: ${response.status}"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
