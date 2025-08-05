@@ -58,10 +58,35 @@ data class AdminLoginRequest(
 data class AdminLoginResponse(
     val success: Boolean,
     val message: String,
-    val data: AdminToken
+    val data: AdminToken? = null
 )
 
 @Serializable
 data class AdminToken(
     val accessToken: String
+)
+
+@Serializable
+data class CreateExamResponse(
+    val success: Boolean,
+    val message: String,
+    val data: ExamData? = null
+)
+
+@Serializable
+data class ExamData(
+    val exam: Exam
+)
+
+@Serializable
+data class Exam(
+    val id: String,
+    val courseName: String,
+    val courseCode: String,
+    val duration: Int,
+    val examType: String,
+    val questionCount: Int,
+    val questions: List<String> = emptyList(),
+    val createdAt: String,
+    val updatedAt: String
 )

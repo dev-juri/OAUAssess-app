@@ -19,21 +19,37 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.koin.compose.koinInject
 
 @Composable
 fun AdminLoginScreen(
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    viewModel: AdminLoginViewModel = koinInject<AdminLoginViewModel>()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+
+    // Collect state from ViewModel
+    val email by viewModel.email.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     val primaryBlue = Color(0xFF2196F3)
     val lightGray = Color(0xFFF5F5F5)
     val errorRed = Color(0xFFD32F2F)
+
+    // Handle UI state changes
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is LoginUiState.Success -> {
+                onLoginSuccess()
+                viewModel.resetState()
+            }
+            else -> { /* No action needed */ }
+        }
+    }
 
     fun isValidEmail(email: String): Boolean {
         val emailRegex = Regex(
@@ -43,35 +59,33 @@ fun AdminLoginScreen(
     }
 
     // Validation functions
-    fun validateEmail() {
+    fun validateEmail(): Boolean {
         emailError = when {
             email.isBlank() -> "Email is required"
             !isValidEmail(email) -> "Please enter a valid email address"
             else -> null
         }
+        return emailError == null
     }
 
-    fun validatePassword() {
+    fun validatePassword(): Boolean {
         passwordError = when {
             password.isBlank() -> "Password is required"
             password.length < 6 -> "Password must be at least 6 characters"
             else -> null
         }
+        return passwordError == null
     }
 
     fun validateForm(): Boolean {
-        validateEmail()
-        validatePassword()
-        return emailError == null && passwordError == null
+        val isEmailValid = validateEmail()
+        val isPasswordValid = validatePassword()
+        return isEmailValid && isPasswordValid
     }
 
     fun handleLogin() {
         if (validateForm()) {
-            isLoading = true
-            // Here you would typically call your admin login logic
-            // For now, just simulate loading
-            // onLoginSuccess() would be called after successful authentication
-            onLoginSuccess()
+            viewModel.login()
         }
     }
 
@@ -120,6 +134,27 @@ fun AdminLoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Show network error if exists
+            errorMessage?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFEBEE)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = error,
+                        color = errorRed,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(12.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
             // Email Field
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
@@ -131,8 +166,8 @@ fun AdminLoginScreen(
                 )
                 OutlinedTextField(
                     value = email,
-                    onValueChange = {
-                        email = it
+                    onValueChange = { newEmail ->
+                        viewModel.onEmailChanged(newEmail)
                         if (emailError != null) emailError = null
                     },
                     placeholder = {
@@ -150,7 +185,8 @@ fun AdminLoginScreen(
                         unfocusedContainerColor = Color.White
                     ),
                     singleLine = true,
-                    isError = emailError != null
+                    isError = emailError != null,
+                    enabled = uiState !is LoginUiState.Loading
                 )
 
                 if (emailError != null) {
@@ -176,8 +212,8 @@ fun AdminLoginScreen(
                 )
                 OutlinedTextField(
                     value = password,
-                    onValueChange = {
-                        password = it
+                    onValueChange = { newPassword ->
+                        viewModel.onPasswordChanged(newPassword)
                         if (passwordError != null) passwordError = null
                     },
                     placeholder = {
@@ -205,7 +241,8 @@ fun AdminLoginScreen(
                         unfocusedContainerColor = Color.White
                     ),
                     singleLine = true,
-                    isError = passwordError != null
+                    isError = passwordError != null,
+                    enabled = uiState !is LoginUiState.Loading
                 )
 
                 if (passwordError != null) {
@@ -230,16 +267,19 @@ fun AdminLoginScreen(
                     containerColor = primaryBlue,
                     contentColor = Color.White
                 ),
-                enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
+                enabled = uiState !is LoginUiState.Loading && email.isNotBlank() && password.isNotBlank()
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Login", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                when (uiState) {
+                    is LoginUiState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    else -> {
+                        Text("Login", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
             }
 
