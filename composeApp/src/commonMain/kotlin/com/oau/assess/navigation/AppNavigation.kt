@@ -133,6 +133,9 @@ fun AppNavigation(
                         navController.navigate(Screen.AdminLogin) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onCreateExam = {
+                        navController.navigate(Screen.CreateExam)
                     }
                 )
             }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -29,10 +30,10 @@ data class Exam(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onCreateExam: () -> Unit = {}
 ) {
     val primaryBlue = Color(0xFF2196F3)
-    val lightGray = Color(0xFFF5F5F5)
 
     val exams = remember {
         listOf(
@@ -43,8 +44,6 @@ fun AdminDashboardScreen(
             Exam("Practice Exam", "Multiple Choice", "PH101")
         )
     }
-
-    var selectedTab by remember { mutableStateOf("Exams") }
 
     Column(
         modifier = Modifier
@@ -72,18 +71,12 @@ fun AdminDashboardScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { /* Handle notifications */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notifications",
-                        tint = Color.Gray
-                    )
-                }
                 IconButton(onClick = onLogout) {
                     Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = Color.Gray
+                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                        contentDescription = "Logout",
+                        modifier = Modifier.size(60.dp),
+                        tint = Color.Red
                     )
                 }
             },
@@ -91,28 +84,6 @@ fun AdminDashboardScreen(
                 containerColor = Color.White
             )
         )
-
-        // Navigation Tabs
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf("Dashboard", "Exams", "Courses", "Students").forEach { tab ->
-                TextButton(
-                    onClick = { selectedTab = tab },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = tab,
-                        color = if (tab == selectedTab) primaryBlue else Color.Gray,
-                        fontWeight = if (tab == selectedTab) FontWeight.Medium else FontWeight.Normal
-                    )
-                }
-            }
-        }
 
         HorizontalDivider(color = Color(0xFFE0E0E0))
 
@@ -136,7 +107,7 @@ fun AdminDashboardScreen(
                 )
 
                 Button(
-                    onClick = { /* Handle new exam */ },
+                    onClick = onCreateExam,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = primaryBlue
                     ),
