@@ -71,6 +71,7 @@ fun AdminLoginScreen(
             // Here you would typically call your admin login logic
             // For now, just simulate loading
             // onLoginSuccess() would be called after successful authentication
+            onLoginSuccess()
         }
     }
 
