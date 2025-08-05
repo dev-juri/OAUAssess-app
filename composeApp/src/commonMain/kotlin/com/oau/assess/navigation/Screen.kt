@@ -39,4 +39,8 @@ sealed class Screen {
     @Serializable
     @SerialName("admin/dashboard")
     data object AdminDashboard : Screen()
+
+    @Serializable
+    @SerialName("/admin/create-exam")
+    data object CreateExam : Screen()
 }

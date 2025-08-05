@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.oau.assess.screens.admin.dashboard.AdminDashboardScreen
+import com.oau.assess.screens.admin.exam.CreateExamScreen
 import com.oau.assess.screens.admin.login.AdminLoginScreen
 import com.oau.assess.screens.student.test.McqExamScreen
 import com.oau.assess.screens.student.test.OpenEndedExamScreen
@@ -132,6 +133,14 @@ fun AppNavigation(
                         navController.navigate(Screen.AdminLogin) {
                             popUpTo(0) { inclusive = true }
                         }
+                    }
+                )
+            }
+
+            composable<Screen.CreateExam> {
+                CreateExamScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
