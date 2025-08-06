@@ -148,10 +148,7 @@ class CreateExamViewModel(
 
         if (tutorialListFile == null) {
             errors.tutorialListFile = "Tutorial list file is required"
-        } else if (!tutorialListFile.name.endsWith(".csv", ignoreCase = true)) {
-            errors.tutorialListFile = "File must be a CSV file"
         }
-
         return errors
     }
 

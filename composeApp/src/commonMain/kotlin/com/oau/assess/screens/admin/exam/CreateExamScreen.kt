@@ -3,10 +3,13 @@ package com.oau.assess.screens.admin.exam
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,7 +75,7 @@ fun CreateExamScreen(
                     .unsafeCast<HTMLInputElement>()
 
                 input.type = "file"
-                input.accept = ".csv,.xlsx,.xls"
+                input.accept = ".xlsx,.xls"
 
                 input.onchange = { event ->
                     val target = event.target as HTMLInputElement
@@ -88,11 +91,10 @@ fun CreateExamScreen(
 
                 input.click()
             } catch (_: Exception) {
-
+                // Handle error silently
             }
         }
     }
-
 
     when (examCreationState) {
         is CreateExamViewModel.ExamCreationState.Loading -> {
@@ -136,72 +138,61 @@ fun CreateExamScreen(
                     .fillMaxSize()
                     .background(lightGray)
             ) {
-                // Top Navigation Bar - matching DashboardScreen style
+                // Top Navigation Bar with Back Button
                 TopAppBar(
                     title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        Text(
+                            text = "Create New Exam",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = onNavigateBack
                         ) {
-                            Text(
-                                text = "🏛️ OAU Assess",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.Black
                             )
                         }
                     },
                     actions = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(24.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clickable {
-                                        viewModel.logoutAdmin()
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Outlined.Logout,
-                                    contentDescription = "Logout",
-                                    modifier = Modifier.size(60.dp),
-                                    tint = Color.Red
-                                )
+                        IconButton(
+                            onClick = {
+                                viewModel.logoutAdmin()
                             }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Logout,
+                                contentDescription = "Logout",
+                                tint = Color.Red
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.White
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    )
                 )
 
-                // Main Content - matching DashboardScreen padding and structure
+                // Scrollable Main Content
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
                 ) {
-                    // Title - matching DashboardScreen style
-                    Text(
-                        text = "Create New Exam",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-
+                    // Subtitle
                     Text(
                         text = "Fill in the details below to create a new exam for students.",
                         fontSize = 16.sp,
                         color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 32.dp)
+                        modifier = Modifier.padding(bottom = 24.dp)
                     )
 
-                    // Form Fields in Cards - similar to ExamAssignmentCard styling
+                    // Form Fields in Cards
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -217,7 +208,7 @@ fun CreateExamScreen(
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(20.dp)
                             ) {
                                 Text(
                                     text = "Exam Name",
@@ -268,7 +259,7 @@ fun CreateExamScreen(
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(20.dp)
                             ) {
                                 Text(
                                     text = "Exam Type",
@@ -280,7 +271,8 @@ fun CreateExamScreen(
 
                                 ExposedDropdownMenuBox(
                                     expanded = isDropdownExpanded,
-                                    onExpandedChange = { isDropdownExpanded = !isDropdownExpanded }
+                                    onExpandedChange = { isDropdownExpanded = !isDropdownExpanded },
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     OutlinedTextField(
                                         value = selectedExamType,
@@ -302,7 +294,8 @@ fun CreateExamScreen(
                                         isError = formErrors.examType != null,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .menuAnchor(),
+                                            .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+                                            .clickable { isDropdownExpanded = true },
                                         shape = RoundedCornerShape(8.dp)
                                     )
 
@@ -349,7 +342,7 @@ fun CreateExamScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(24.dp),
+                                    .padding(20.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 // Number of Questions
@@ -448,7 +441,7 @@ fun CreateExamScreen(
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(20.dp)
                             ) {
                                 Text(
                                     text = "Course Code",
@@ -467,7 +460,7 @@ fun CreateExamScreen(
                                     },
                                     placeholder = {
                                         Text(
-                                            text = "Enter course code",
+                                            text = "Enter course code (e.g., CSC301)",
                                             color = Color(0xFF9E9E9E)
                                         )
                                     },
@@ -499,29 +492,36 @@ fun CreateExamScreen(
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(20.dp)
                             ) {
                                 Text(
-                                    text = "Eligible Students (CSV)",
+                                    text = "Eligible Students List",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.Black,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                                Text(
+                                    text = "Upload a CSV file containing student information",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(bottom = 12.dp)
                                 )
 
                                 Button(
-                                    onClick = {  },
+                                    onClick = handleFileSelection,
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFF5F5F5),
-                                        contentColor = Color.Black
+                                        containerColor = if (selectedFile != null) Color(0xFFE8F5E8) else Color(0xFFF5F5F5),
+                                        contentColor = if (selectedFile != null) Color(0xFF2E7D32) else Color.Black
                                     ),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = selectedFile?.name ?: "Choose CSV file",
+                                        text = selectedFile?.name ?: "Choose CSV/Excel file",
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(vertical = 4.dp)
                                     )
                                 }
                                 formErrors.tutorialListFile?.let {
@@ -535,9 +535,9 @@ fun CreateExamScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                        // Create Button - matching DashboardScreen button style
+                        // Create Button
                         Button(
                             onClick = {
                                 viewModel.createExam(
@@ -557,24 +557,32 @@ fun CreateExamScreen(
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp)
+                                .height(52.dp)
                         ) {
-                            if (examCreationState is CreateExamViewModel.ExamCreationState.Loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (examCreationState is CreateExamViewModel.ExamCreationState.Loading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text(
+                                    text = if (examCreationState is CreateExamViewModel.ExamCreationState.Loading)
+                                        "Creating Exam..." else "Create Exam",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
                             }
-                            Text(
-                                text = if (examCreationState is CreateExamViewModel.ExamCreationState.Loading)
-                                    "Creating..." else "Create Exam",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
                         }
+
+                        // Bottom spacing for better scrolling experience
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }

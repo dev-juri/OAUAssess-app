@@ -10,15 +10,19 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import io.ktor.http.headers
-import io.ktor.utils.io.InternalAPI
+import org.khronos.webgl.ArrayBuffer
 import org.w3c.files.File
+import io.ktor.utils.io.core.buildPacket
+import io.ktor.utils.io.core.writeFully
+import org.khronos.webgl.Int8Array
+import org.khronos.webgl.toByteArray
 
 class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
 
@@ -52,7 +56,6 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         }
     }
 
-    @OptIn(InternalAPI::class)
     override suspend fun createExam(
         courseName: String,
         courseCode: String,
@@ -62,6 +65,9 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         tutorialListFile: File
     ): NetworkResult<CreateExamResponse> {
         return try {
+            // Convert browser File to ByteArray
+            val fileBytes = Int8Array(tutorialListFile.unsafeCast<ArrayBuffer>()).toByteArray()
+
             val response = client.submitFormWithBinaryData(
                 url = "http://localhost:3000/exam",
                 formData = formData {
@@ -71,24 +77,24 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     append("questionCount", questionCount.toString())
                     append("examType", examType)
 
-                    append("tutorialList", tutorialListFile, Headers.build {
+                    // Alternative: Use ChannelProvider
+                    appendInput("tutorialList", Headers.build {
+                        append(HttpHeaders.ContentType, tutorialListFile.type)
                         append(
                             HttpHeaders.ContentDisposition,
                             "form-data; name=\"tutorialList\"; filename=\"${tutorialListFile.name}\""
                         )
-                        append(HttpHeaders.ContentType, "text/csv")
-                    })
+                    }) {
+                        buildPacket { writeFully(fileBytes) }
+                    }
                 }
             ) {
-                headers {
-                    append(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
-                }
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
             }
 
             NetworkResult.Success(response.body())
         } catch (e: Exception) {
             NetworkResult.Error(e.message.toString())
         }
-
     }
 }
