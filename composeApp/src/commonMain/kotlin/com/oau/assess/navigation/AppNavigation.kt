@@ -142,9 +142,21 @@ fun AppNavigation(
 
             composable<Screen.CreateExam> {
                 CreateExamScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.AdminLogin) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onExamCreated = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
                     onNavigateBack = {
-                        navController.popBackStack()
-                    }
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
                 )
             }
         }
