@@ -20,12 +20,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oau.assess.utils.ScreenExamType
 import org.w3c.files.File
 import org.w3c.dom.HTMLInputElement
 import kotlinx.browser.document
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalWasmJsInterop::class)
 @Composable
 fun CreateExamScreen(
     viewModel: CreateExamViewModel = koinInject<CreateExamViewModel>(),
@@ -40,7 +41,7 @@ fun CreateExamScreen(
 
     // Form state
     var examName by remember { mutableStateOf("") }
-    var selectedExamType by remember { mutableStateOf("") }
+    var selectedExamType by remember { mutableStateOf<ScreenExamType?>(null) }
     var numberOfQuestions by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
     var courseCode by remember { mutableStateOf("") }
@@ -51,7 +52,7 @@ fun CreateExamScreen(
     val primaryBlue = Color(0xFF2196F3)
     val lightGray = Color(0xFFF5F5F5)
 
-    val examTypes = listOf("Multiple Choice", "Open-ended")
+    val examTypes = listOf<ScreenExamType>(ScreenExamType.McqQuestion, ScreenExamType.OeQuestion)
 
     // Handle navigation to login if not authenticated
     LaunchedEffect(isAdminLoggedIn) {
@@ -275,7 +276,7 @@ fun CreateExamScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     OutlinedTextField(
-                                        value = selectedExamType,
+                                        value = selectedExamType?.examType ?: "",
                                         onValueChange = {},
                                         readOnly = true,
                                         placeholder = {
@@ -305,7 +306,7 @@ fun CreateExamScreen(
                                     ) {
                                         examTypes.forEach { type ->
                                             DropdownMenuItem(
-                                                text = { Text(type) },
+                                                text = { Text(type.examType) },
                                                 onClick = {
                                                     selectedExamType = type
                                                     isDropdownExpanded = false
@@ -545,7 +546,7 @@ fun CreateExamScreen(
                                     courseCode = courseCode,
                                     duration = duration,
                                     questionCount = numberOfQuestions,
-                                    examType = selectedExamType,
+                                    examType = selectedExamType!!.name,
                                     tutorialListFile = selectedFile
                                 )
                             },

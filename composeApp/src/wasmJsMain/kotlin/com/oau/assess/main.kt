@@ -4,6 +4,7 @@ package com.oau.assess
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import androidx.navigation.ExperimentalBrowserHistoryApi
+import androidx.navigation.bindToBrowserNavigation
 import androidx.navigation.bindToNavigation
 import com.oau.initKoin
 import kotlinx.browser.document
@@ -20,7 +21,7 @@ fun main() {
     val body = document.body ?: return
     ComposeViewport(body) {
         App(
-            onNavHostReady = { window.bindToNavigation(it) }
+            onNavHostReady = { it.bindToBrowserNavigation() }
         )
     }
 }

@@ -6,6 +6,7 @@ import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.repositories.student.StudentRepositoryImpl.Companion.BASE_URL
 import com.oau.assess.utils.NetworkResult
+import com.oau.assess.utils.readFileAsByteArray
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.formData
@@ -56,6 +57,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         }
     }
 
+
     override suspend fun createExam(
         courseName: String,
         courseCode: String,
@@ -65,8 +67,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         tutorialListFile: File
     ): NetworkResult<CreateExamResponse> {
         return try {
-            // Convert browser File to ByteArray
-            val fileBytes = Int8Array(tutorialListFile.unsafeCast<ArrayBuffer>()).toByteArray()
+            val fileBytes = readFileAsByteArray(tutorialListFile)
 
             val response = client.submitFormWithBinaryData(
                 url = "http://localhost:3000/exam",
@@ -77,7 +78,6 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     append("questionCount", questionCount.toString())
                     append("examType", examType)
 
-                    // Alternative: Use ChannelProvider
                     appendInput("tutorialList", Headers.build {
                         append(HttpHeaders.ContentType, tutorialListFile.type)
                         append(
