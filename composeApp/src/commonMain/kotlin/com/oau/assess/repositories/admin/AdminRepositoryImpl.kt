@@ -10,6 +10,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.js.Js
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.forms.append
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
@@ -20,8 +23,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.writeFully
+import kotlinx.serialization.json.Json
 import org.w3c.files.File
 
 class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
@@ -69,7 +74,18 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         return try {
             val fileBytes = readFileAsByteArray(tutorialListFile)
 
-            val response = HttpClient(Js).submitFormWithBinaryData(
+            val response: CreateExamResponse = HttpClient(Js) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        prettyPrint = true
+                        isLenient = true
+                        ignoreUnknownKeys = true
+                    })
+                }
+                install(Logging) {
+                    level = LogLevel.INFO
+                }
+            }.submitFormWithBinaryData(
                 url = "${BASE_URL}exam",
                 formData = formData {
                     append("courseName", courseName)
@@ -79,14 +95,17 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     append("examType", examType)
                     append("tutorialList", fileBytes, Headers.build {
                         append(HttpHeaders.ContentDisposition, "filename=\"tutorial_list.xlsx\"")
-                        append(HttpHeaders.ContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        append(
+                            HttpHeaders.ContentType,
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
                     })
                 }
             ) {
                 header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
-            }
+            }.body()
 
-            NetworkResult.Success(response.body())
+            NetworkResult.Success(response)
 
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error occurred")
