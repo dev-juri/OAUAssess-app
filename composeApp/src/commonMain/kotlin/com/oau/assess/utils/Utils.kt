@@ -2,7 +2,9 @@ package com.oau.assess.utils
 
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
+import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.get
+import org.w3c.dom.events.Event
 import org.w3c.files.File
 import org.w3c.files.FileReader
 import kotlin.coroutines.resume
@@ -34,8 +36,10 @@ suspend fun readFileAsByteArray(file: File): ByteArray {
         reader.onload = {
             try {
                 val arrayBuffer = reader.result as ArrayBuffer
-                val int8Array = Int8Array(arrayBuffer)
-                val byteArray = ByteArray(int8Array.length) { i -> return@ByteArray int8Array[i] }
+                val uint8Array = Uint8Array(arrayBuffer)
+                val byteArray = ByteArray(uint8Array.length) { i ->
+                    uint8Array[i]
+                }
                 continuation.resume(byteArray)
             } catch (e: Exception) {
                 continuation.resumeWithException(e)
@@ -43,7 +47,7 @@ suspend fun readFileAsByteArray(file: File): ByteArray {
         }
 
         reader.onerror = {
-            continuation.resumeWithException(Exception("Failed to read file"))
+            continuation.resumeWithException(Exception("Failed to read file: ${reader.error}"))
         }
 
         reader.readAsArrayBuffer(file)

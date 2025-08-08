@@ -88,5 +88,7 @@ data class Exam(
     val questionCount: Int,
     val questions: List<String> = emptyList(),
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    @SerialName("__v")
+    val version: Int
 )

@@ -53,6 +53,11 @@ kotlin {
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
                 implementation("io.ktor:ktor-client-logging:3.1.3")
 
+                implementation("io.ktor:ktor-client-cio:3.1.3")
+                implementation("io.ktor:ktor-client-js:3.1.3")
+                implementation("io.ktor:ktor-client-serialization:3.1.3")
+
+
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 

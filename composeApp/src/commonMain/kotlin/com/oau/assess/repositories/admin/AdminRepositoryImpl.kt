@@ -4,11 +4,13 @@ import com.oau.assess.models.AdminLoginRequest
 import com.oau.assess.models.AdminLoginResponse
 import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
-import com.oau.assess.repositories.student.StudentRepositoryImpl.Companion.BASE_URL
 import com.oau.assess.utils.NetworkResult
 import com.oau.assess.utils.readFileAsByteArray
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.js.Js
+import io.ktor.client.request.forms.append
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.header
@@ -18,12 +20,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import org.khronos.webgl.ArrayBuffer
-import org.w3c.files.File
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.writeFully
-import org.khronos.webgl.Int8Array
-import org.khronos.webgl.toByteArray
+import org.w3c.files.File
 
 class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
 
@@ -58,6 +57,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
     }
 
 
+    @OptIn(ExperimentalWasmJsInterop::class)
     override suspend fun createExam(
         courseName: String,
         courseCode: String,
@@ -69,32 +69,32 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         return try {
             val fileBytes = readFileAsByteArray(tutorialListFile)
 
-            val response = client.submitFormWithBinaryData(
-                url = "http://localhost:3000/exam",
+            val response = HttpClient(Js).submitFormWithBinaryData(
+                url = "${BASE_URL}exam",
                 formData = formData {
                     append("courseName", courseName)
                     append("courseCode", courseCode)
                     append("duration", duration.toString())
                     append("questionCount", questionCount.toString())
                     append("examType", examType)
-
-                    appendInput("tutorialList", Headers.build {
-                        append(HttpHeaders.ContentType, tutorialListFile.type)
-                        append(
-                            HttpHeaders.ContentDisposition,
-                            "form-data; name=\"tutorialList\"; filename=\"${tutorialListFile.name}\""
-                        )
-                    }) {
-                        buildPacket { writeFully(fileBytes) }
-                    }
+                    append("tutorialList", fileBytes, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"tutorial_list.xlsx\"")
+                        append(HttpHeaders.ContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    })
                 }
             ) {
                 header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
             }
 
             NetworkResult.Success(response.body())
+
         } catch (e: Exception) {
-            NetworkResult.Error(e.message.toString())
+            NetworkResult.Error(e.message ?: "Unknown error occurred")
         }
+    }
+
+
+    companion object {
+        private const val BASE_URL = "http://localhost:3000/"
     }
 }
