@@ -52,7 +52,7 @@ fun CreateExamScreen(
     val primaryBlue = Color(0xFF2196F3)
     val lightGray = Color(0xFFF5F5F5)
 
-    val examTypes = listOf<ScreenExamType>(ScreenExamType.McqQuestion, ScreenExamType.OeQuestion)
+    val examTypes = listOf(ScreenExamType.McqQuestion, ScreenExamType.OeQuestion)
 
     // Handle navigation to login if not authenticated
     LaunchedEffect(isAdminLoggedIn) {

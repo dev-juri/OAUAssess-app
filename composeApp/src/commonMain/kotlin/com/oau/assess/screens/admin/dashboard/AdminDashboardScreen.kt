@@ -20,6 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oau.assess.screens.student.dashboard.DashboardViewModel
+import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 
 data class Exam(
     val name: String,
@@ -31,9 +34,24 @@ data class Exam(
 @Composable
 fun AdminDashboardScreen(
     onLogout: () -> Unit = {},
-    onCreateExam: () -> Unit = {}
+    onCreateExam: () -> Unit = {},
+    viewModel: AdminDashboardViewModel = koinInject<AdminDashboardViewModel>()
 ) {
+
+    val shouldLogout by viewModel.shouldLogout.collectAsState()
     val primaryBlue = Color(0xFF2196F3)
+
+    LaunchedEffect(Unit) {
+        viewModel.loadLoggedInAdmin()
+    }
+
+    LaunchedEffect(shouldLogout) {
+        if (shouldLogout) {
+            onLogout()
+            delay(100)
+            viewModel.onLogoutHandled()
+        }
+    }
 
     val exams = remember {
         listOf(
@@ -71,7 +89,7 @@ fun AdminDashboardScreen(
                 }
             },
             actions = {
-                IconButton(onClick = onLogout) {
+                IconButton(onClick = { viewModel.logout() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = "Logout",
