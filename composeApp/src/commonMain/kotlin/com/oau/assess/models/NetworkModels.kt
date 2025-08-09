@@ -92,3 +92,17 @@ data class Exam(
     @SerialName("__v")
     val version: Int
 )
+
+
+@Serializable
+data class ExamResponse(
+    val success: Boolean,
+    val message: String,
+    val data: List<Exam>
+)
+
+@Serializable
+data class UpdateExamResponse(
+    val success: Boolean,
+    val message: String
+)

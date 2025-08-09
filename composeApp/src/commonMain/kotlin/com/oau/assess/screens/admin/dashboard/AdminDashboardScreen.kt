@@ -19,10 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,14 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oau.assess.models.Exam
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
-
-data class Exam(
-    val name: String,
-    val type: String,
-    val courseCode: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +57,9 @@ fun AdminDashboardScreen(
     viewModel: AdminDashboardViewModel = koinInject<AdminDashboardViewModel>()
 ) {
 
+    val uiState by viewModel.uiState.collectAsState()
     val shouldLogout by viewModel.shouldLogout.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val primaryBlue = Color(0xFF2196F3)
 
     LaunchedEffect(Unit) {
@@ -74,16 +72,6 @@ fun AdminDashboardScreen(
             delay(100)
             viewModel.onLogoutHandled()
         }
-    }
-
-    val exams = remember {
-        listOf(
-            Exam("Midterm Exam", "Multiple Choice", "CS101"),
-            Exam("Final Exam", "Open-ended", "CS101"),
-            Exam("Quiz 1", "Multiple Choice", "MA102"),
-            Exam("Lab Exam", "Open-ended", "EE201"),
-            Exam("Practice Exam", "Multiple Choice", "PH101")
-        )
     }
 
     Column(
@@ -112,11 +100,19 @@ fun AdminDashboardScreen(
                 }
             },
             actions = {
+                IconButton(onClick = { viewModel.refreshExams() }) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        modifier = Modifier.size(24.dp),
+                        tint = primaryBlue
+                    )
+                }
                 IconButton(onClick = { viewModel.logout() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = "Logout",
-                        modifier = Modifier.size(60.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = Color.Red
                     )
                 }
@@ -129,90 +125,179 @@ fun AdminDashboardScreen(
         HorizontalDivider(color = Color(0xFFE0E0E0))
 
         // Main Content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            // Header with New Exam button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Exams",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Button(
-                    onClick = onCreateExam,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryBlue
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+        when (val state = uiState) {
+            is AdminDashboardUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("New Exam")
+                    CircularProgressIndicator(color = primaryBlue)
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            is AdminDashboardUiState.Error -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Error: ${state.message}",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.refreshExams() },
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
 
-            // Exams Table
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            is AdminDashboardUiState.Success -> {
+                ExamListContent(
+                    exams = state.exams,
+                    primaryBlue = primaryBlue,
+                    onCreateExam = onCreateExam,
+                    isLoading = isLoading
+                )
+            }
+
+            is AdminDashboardUiState.Empty -> {
+                onLogout
+                viewModel.logout()
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExamListContent(
+    exams: List<Exam>,
+    primaryBlue: Color,
+    onCreateExam: () -> Unit,
+    isLoading: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Header with New Exam button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Exams",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Button(
+                onClick = onCreateExam,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryBlue
+                ),
+                shape = RoundedCornerShape(8.dp),
+                enabled = !isLoading
             ) {
-                Column {
-                    // Table Header
-                    Row(
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("New Exam")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Exams Table
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                // Table Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF8F9FA))
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Exam Name",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF555555),
+                        modifier = Modifier.weight(2f)
+                    )
+                    Text(
+                        text = "Exam Type",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF555555),
+                        modifier = Modifier.weight(1.5f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Course Code",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF555555),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Duration",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF555555),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Actions",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF555555),
+                        modifier = Modifier.weight(1.5f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                HorizontalDivider(color = Color(0xFFE0E0E0))
+
+                // Loading or Exams Content
+                if (isLoading) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFF8F9FA))
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = primaryBlue)
+                    }
+                } else if (exams.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Exam Name",
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF555555),
-                            modifier = Modifier.weight(2f)
-                        )
-                        Text(
-                            text = "Exam Type",
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF555555),
-                            modifier = Modifier.weight(1.5f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Course Code",
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF555555),
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Actions",
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF555555),
-                            modifier = Modifier.weight(1.5f),
+                            text = "No exams found",
+                            color = Color.Gray,
                             textAlign = TextAlign.Center
                         )
                     }
-
-                    HorizontalDivider(color = Color(0xFFE0E0E0))
-
+                } else {
                     // Table Rows
                     LazyColumn {
                         items(exams) { exam ->
@@ -241,7 +326,7 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = exam.name,
+            text = exam.courseName,
             color = Color.Black,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(2f)
@@ -255,13 +340,13 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
             contentAlignment = Alignment.Center
         ) {
             Surface(
-                color = if (exam.type == "Multiple Choice") Color(0xFFE3F2FD) else Color(0xFFF3E5F5),
+                color = if (exam.examType == "McqQuestion") Color(0xFFE3F2FD) else Color(0xFFF3E5F5),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = exam.type,
-                    color = if (exam.type == "Multiple Choice") primaryBlue else Color(0xFF7B1FA2),
+                    text = if(exam.examType=="McqQuestion") "Multiple Choice" else "Open-Ended",
+                    color = if (exam.examType == "McqQuestion") primaryBlue else Color(0xFF7B1FA2),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     textAlign = TextAlign.Center
@@ -276,6 +361,14 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
             textAlign = TextAlign.Center
         )
 
+        Text(
+            text = "${exam.duration} min",
+            color = Color.Black,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+            fontSize = 12.sp
+        )
+
         Box(
             modifier = Modifier.weight(1.5f),
             contentAlignment = Alignment.Center
@@ -287,7 +380,7 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
                 )
             ) {
                 Text(
-                    text = "View/Export Report",
+                    text = "View/Export",
                     fontSize = 12.sp
                 )
             }
