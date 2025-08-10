@@ -1,15 +1,10 @@
 package com.oau.assess.utils
 
 import kotlinx.browser.document
-import kotlinx.browser.window
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeout
 import org.khronos.webgl.ArrayBuffer
-import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.get
 import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.events.Event
 import org.w3c.files.File
 import org.w3c.files.FileReader
 import kotlin.coroutines.resume
@@ -53,7 +48,7 @@ fun pickFile(accept: String, onFileSelected: (File?) -> Unit) {
         }
 
         input.click()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         onFileSelected(null)
     }
 }
