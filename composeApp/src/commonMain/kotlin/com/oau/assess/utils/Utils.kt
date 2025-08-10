@@ -1,9 +1,14 @@
 package com.oau.assess.utils
 
+import kotlinx.browser.document
+import kotlinx.browser.window
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.get
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.Event
 import org.w3c.files.File
 import org.w3c.files.FileReader
@@ -23,9 +28,34 @@ enum class ExamType {
     OE
 }
 
-enum class ScreenExamType(val examType : String) {
+enum class ScreenExamType(val examType: String) {
     McqQuestion("Multiple Choice"),
     OeQuestion("Open-Ended")
+}
+
+@OptIn(ExperimentalWasmJsInterop::class)
+fun pickFile(accept: String, onFileSelected: (File?) -> Unit) {
+    try {
+        val input = document.createElement("input")
+            .unsafeCast<HTMLInputElement>()
+
+        input.type = "file"
+        input.accept = accept
+
+        input.onchange = { event ->
+            val target = event.target as HTMLInputElement
+            val file = target.files?.item(0)
+            onFileSelected(file)
+        }
+
+        input.onclick = {
+            input.value = ""
+        }
+
+        input.click()
+    } catch (e: Exception) {
+        onFileSelected(null)
+    }
 }
 
 @OptIn(ExperimentalWasmJsInterop::class)

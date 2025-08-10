@@ -54,6 +54,7 @@ import org.koin.compose.koinInject
 fun AdminDashboardScreen(
     onLogout: () -> Unit = {},
     onCreateExam: () -> Unit = {},
+    onUpdateExam: (Exam) -> Unit = {},
     viewModel: AdminDashboardViewModel = koinInject<AdminDashboardViewModel>()
 ) {
 
@@ -163,12 +164,13 @@ fun AdminDashboardScreen(
                     exams = state.exams,
                     primaryBlue = primaryBlue,
                     onCreateExam = onCreateExam,
+                    onUpdateExam = onUpdateExam, // Pass the onUpdateExam callback
                     isLoading = isLoading
                 )
             }
 
             is AdminDashboardUiState.Empty -> {
-                onLogout
+                onLogout()
                 viewModel.logout()
             }
         }
@@ -180,6 +182,7 @@ private fun ExamListContent(
     exams: List<Exam>,
     primaryBlue: Color,
     onCreateExam: () -> Unit,
+    onUpdateExam: (Exam) -> Unit,
     isLoading: Boolean
 ) {
     Column(
@@ -267,7 +270,7 @@ private fun ExamListContent(
                         text = "Actions",
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF555555),
-                        modifier = Modifier.weight(1.5f),
+                        modifier = Modifier.weight(2f), // Made wider to accommodate both buttons
                         textAlign = TextAlign.Center
                     )
                 }
@@ -301,7 +304,11 @@ private fun ExamListContent(
                     // Table Rows
                     LazyColumn {
                         items(exams) { exam ->
-                            ExamRow(exam = exam, primaryBlue = primaryBlue)
+                            ExamRow(
+                                exam = exam,
+                                primaryBlue = primaryBlue,
+                                onUpdateExam = onUpdateExam // Pass the callback correctly
+                            )
                             if (exam != exams.last()) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -317,7 +324,11 @@ private fun ExamListContent(
 }
 
 @Composable
-fun ExamRow(exam: Exam, primaryBlue: Color) {
+fun ExamRow(
+    exam: Exam,
+    primaryBlue: Color,
+    onUpdateExam: (Exam) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -345,7 +356,7 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = if(exam.examType=="McqQuestion") "Multiple Choice" else "Open-Ended",
+                    text = if (exam.examType == "McqQuestion") "Multiple Choice" else "Open-Ended",
                     color = if (exam.examType == "McqQuestion") primaryBlue else Color(0xFF7B1FA2),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -369,10 +380,13 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
             fontSize = 12.sp
         )
 
-        Box(
-            modifier = Modifier.weight(1.5f),
-            contentAlignment = Alignment.Center
+        // Actions Column
+        Row(
+            modifier = Modifier.weight(2f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // View/Export Button
             TextButton(
                 onClick = { /* Handle view/export */ },
                 colors = ButtonDefaults.textButtonColors(
@@ -383,6 +397,22 @@ fun ExamRow(exam: Exam, primaryBlue: Color) {
                     text = "View/Export",
                     fontSize = 12.sp
                 )
+            }
+
+            // Upload Questions Button (only show if no questions)
+            if (exam.questions.isEmpty()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(
+                    onClick = { onUpdateExam(exam) }, // Call the callback with the exam
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = primaryBlue
+                    )
+                ) {
+                    Text(
+                        text = "Upload Questions",
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
     }

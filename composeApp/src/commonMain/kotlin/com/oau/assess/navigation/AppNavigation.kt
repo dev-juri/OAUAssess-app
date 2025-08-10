@@ -10,11 +10,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.oau.assess.models.Exam
 import com.oau.assess.screens.admin.dashboard.AdminDashboardScreen
 import com.oau.assess.screens.admin.exam.CreateExamScreen
+import com.oau.assess.screens.admin.exam.UpdateMcqExamScreen
+import com.oau.assess.screens.admin.exam.UpdateOeExamScreen
 import com.oau.assess.screens.admin.login.AdminLoginScreen
 import com.oau.assess.screens.student.test.McqExamScreen
 import com.oau.assess.screens.student.test.OpenEndedExamScreen
+import com.oau.assess.utils.ScreenExamType
 import org.koin.compose.KoinContext
 
 @Composable
@@ -56,6 +60,7 @@ fun AppNavigation(
                                     )
                                 )
                             }
+
                             else -> {
                                 navController.navigate(
                                     Screen.McqExam(
@@ -136,6 +141,48 @@ fun AppNavigation(
                     },
                     onCreateExam = {
                         navController.navigate(Screen.CreateExam)
+                    },
+                    onUpdateExam = { exam ->
+                        when (exam.examType.lowercase()) {
+                            ScreenExamType.McqQuestion.name -> {
+                                navController.navigate(
+                                    Screen.UpdateMCQExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        questionCount = exam.questionCount,
+                                        examType = exam.examType
+                                    )
+                                )
+                            }
+
+                            ScreenExamType.OeQuestion.name -> {
+                                navController.navigate(
+                                    Screen.UpdateOpenEndedExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        examType = exam.examType
+                                    )
+                                )
+                            }
+
+                            else -> {
+                                // Default to MCQ if exam type is not recognized
+                                navController.navigate(
+                                    Screen.UpdateMCQExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        questionCount = exam.questionCount,
+                                        examType = exam.examType
+                                    )
+                                )
+                            }
+                        }
                     }
                 )
             }
@@ -157,6 +204,86 @@ fun AppNavigation(
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                )
+            }
+
+            // Exam Update Screens
+            composable<Screen.UpdateMCQExam> { backStackEntry ->
+                val updateMCQExam = backStackEntry.toRoute<Screen.UpdateMCQExam>()
+
+                // Create exam object from navigation parameters
+                val exam = Exam(
+                    id = updateMCQExam.examId,
+                    courseName = updateMCQExam.courseName,
+                    courseCode = updateMCQExam.courseCode,
+                    duration = updateMCQExam.duration,
+                    questionCount = updateMCQExam.questionCount,
+                    examType = updateMCQExam.examType,
+                    questions = emptyList(),
+                    createdAt = "",
+                    updatedAt = "",
+                    version = 0
+                )
+
+                UpdateMcqExamScreen(
+                    exam = exam,
+                    onBackPressed = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(Screen.AdminDashboard) { inclusive = true }
+                        }
+                    },
+                    onFileSelected = { fileData, fileName ->
+                        // Handle file selection if needed for preview or validation
+                    },
+                    onUpdateExam = { fileData, fileName ->
+                        // Handle exam update logic here
+                        // Call your repository/API to update the exam with the file
+                        // After successful update, navigate back to dashboard
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(Screen.AdminDashboard) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable<Screen.UpdateOpenEndedExam> { backStackEntry ->
+                val updateOpenEndedExam = backStackEntry.toRoute<Screen.UpdateOpenEndedExam>()
+
+                // Create exam object from navigation parameters
+                val exam = Exam(
+                    id = updateOpenEndedExam.examId,
+                    courseName = updateOpenEndedExam.courseName,
+                    courseCode = updateOpenEndedExam.courseCode,
+                    duration = updateOpenEndedExam.duration,
+                    questionCount = 0, // Not relevant for open-ended exams
+                    examType = updateOpenEndedExam.examType,
+                    questions = emptyList(),
+                    createdAt = "",
+                    updatedAt = "",
+                    version = 0
+                )
+
+                UpdateOeExamScreen(
+                    exam = exam,
+                    onBackPressed = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(Screen.AdminDashboard) { inclusive = true }
+                        }
+                    },
+                    onQuestionsFileSelected = { fileData, fileName ->
+                        // Handle questions file selection if needed
+                    },
+                    onAnswerKeyFileSelected = { fileData, fileName ->
+                        // Handle answer key file selection if needed
+                    },
+                    onUpdateExam = { questionsFileData, questionsFileName, answerKeyFileData, answerKeyFileName ->
+                        // Handle exam update logic here
+                        // Call your repository/API to update the exam with the files
+                        // After successful update, navigate back to dashboard
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(Screen.AdminDashboard) { inclusive = true }
+                        }
+                    }
                 )
             }
         }

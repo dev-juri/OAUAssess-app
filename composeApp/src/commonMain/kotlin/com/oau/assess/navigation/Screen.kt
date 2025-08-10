@@ -43,4 +43,25 @@ sealed class Screen {
     @Serializable
     @SerialName("/admin/create-exam")
     data object CreateExam : Screen()
+
+    @Serializable
+    @SerialName("admin/exam/mcq")
+    data class UpdateMCQExam(
+        val examId: String,
+        val courseName: String,
+        val courseCode: String,
+        val duration: Int,
+        val questionCount: Int,
+        val examType: String
+    ) : Screen()
+
+    @Serializable
+    @SerialName("admin/exam/oe")
+    data class UpdateOpenEndedExam(
+        val examId: String,
+        val courseName: String,
+        val courseCode: String,
+        val duration: Int,
+        val examType: String
+    ) : Screen()
 }
