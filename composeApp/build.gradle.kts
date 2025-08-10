@@ -21,7 +21,7 @@ val baseUrl: String =
     (findProperty("BASE_URL") as String?)
         ?: System.getenv("BASE_URL")
         ?: localProperties.getProperty("BASE_URL")
-        ?: "https://default-url.example.com/"
+        ?: "http://localhost:3000/"
 
 val generateBuildConfig by tasks.registering {
     val outputDir = layout.buildDirectory.dir("generated/source/buildConfig/commonMain/kotlin")
