@@ -1,6 +1,6 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,6 +8,41 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     kotlin("plugin.serialization") version "2.2.0-RC2"
+}
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+val baseUrl: String =
+    (findProperty("BASE_URL") as String?)
+        ?: System.getenv("BASE_URL")
+        ?: localProperties.getProperty("BASE_URL")
+        ?: "https://default-url.example.com/"
+
+val generateBuildConfig by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/source/buildConfig/commonMain/kotlin")
+    val packageName = "com.oau.assess"
+
+    inputs.property("BASE_URL", baseUrl)
+    outputs.dir(outputDir)
+
+    doLast {
+        val file = outputDir.get().file("BuildConfig.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            package $packageName
+
+            object BuildConfig {
+                const val BASE_URL = "$baseUrl"
+            }
+            """.trimIndent()
+        )
+    }
 }
 
 kotlin {
@@ -33,6 +68,7 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            kotlin.srcDir(generateBuildConfig.map { it.outputs.files.singleFile.parentFile })
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -82,4 +118,8 @@ kotlin {
             }
         }
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn("generateBuildConfig")
 }

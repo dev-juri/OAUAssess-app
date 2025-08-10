@@ -1,5 +1,6 @@
 package com.oau.assess.repositories.admin
 
+import com.oau.assess.BuildConfig
 import com.oau.assess.models.AdminLoginRequest
 import com.oau.assess.models.AdminLoginResponse
 import com.oau.assess.models.AdminToken
@@ -47,7 +48,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
 
     override suspend fun login(request: AdminLoginRequest): NetworkResult<AdminToken> {
         return try {
-            val response: AdminLoginResponse = client.post("${BASE_URL}auth") {
+            val response: AdminLoginResponse = client.post("${BuildConfig.BASE_URL}auth") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }.body()
@@ -88,7 +89,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     level = LogLevel.INFO
                 }
             }.submitFormWithBinaryData(
-                url = "${BASE_URL}exam",
+                url = "${BuildConfig.BASE_URL}exam",
                 formData = formData {
                     append("courseName", courseName)
                     append("courseCode", courseCode)
@@ -124,7 +125,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
 
     override suspend fun getAllExams(): NetworkResult<List<Exam>> {
         return try {
-            val response = client.get("${BASE_URL}exam/all") {
+            val response = client.get("${BuildConfig.BASE_URL}exam/all") {
                 header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
             }
 
@@ -165,7 +166,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     level = LogLevel.INFO
                 }
             }.submitFormWithBinaryData(
-                url = "${BASE_URL}exam/mcq/$examId",
+                url = "${BuildConfig.BASE_URL}exam/mcq/$examId",
                 formData = formData {
                     append("mcqList", fileBytes, Headers.build {
                         append(
@@ -227,7 +228,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     level = LogLevel.INFO
                 }
             }.submitFormWithBinaryData(
-                url = "${BASE_URL}exam/oe/$examId",
+                url = "${BuildConfig.BASE_URL}exam/oe/$examId",
                 formData = formData {
                     fileMap.forEach { file ->
 
@@ -254,9 +255,5 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error occurred")
         }
-    }
-
-    companion object {
-        private const val BASE_URL = "http://localhost:3000/"
     }
 }

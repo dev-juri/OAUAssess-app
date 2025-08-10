@@ -1,5 +1,6 @@
 package com.oau.assess.repositories.student
 
+import com.oau.assess.BuildConfig
 import com.oau.assess.data.AssignmentQuestionsResponse
 import com.oau.assess.data.ExamAssignment
 import com.oau.assess.data.ExamAssignmentsResponse
@@ -7,9 +8,9 @@ import com.oau.assess.data.Question
 import com.oau.assess.models.LoginRequest
 import com.oau.assess.models.LoginResponse
 import com.oau.assess.models.QuestionResponse
+import com.oau.assess.models.StudentData
 import com.oau.assess.models.SubmissionRequest
 import com.oau.assess.models.SubmissionResponse
-import com.oau.assess.models.StudentData
 import com.oau.assess.utils.ExamType
 import com.oau.assess.utils.NetworkResult
 import io.ktor.client.HttpClient
@@ -39,7 +40,7 @@ class StudentRepositoryImpl(
 
     override suspend fun login(request: LoginRequest): NetworkResult<StudentData> {
         return try {
-            val response: LoginResponse = client.post("${BASE_URL}student/auth") {
+            val response: LoginResponse = client.post("${BuildConfig.BASE_URL}student/auth") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }.body()
@@ -57,7 +58,7 @@ class StudentRepositoryImpl(
 
     override suspend fun getExamAssignments(studentId: String): NetworkResult<List<ExamAssignment>> {
         return try {
-            val response = client.get("${BASE_URL}student/$studentId/assignments")
+            val response = client.get("${BuildConfig.BASE_URL}student/$studentId/assignments")
 
             when (response.status) {
                 HttpStatusCode.OK -> {
@@ -82,7 +83,8 @@ class StudentRepositoryImpl(
         examId: String
     ): NetworkResult<List<Question>> {
         return try {
-            val response = client.get("${BASE_URL}student/$studentId/assignments/$examId")
+            val response =
+                client.get("${BuildConfig.BASE_URL}student/$studentId/assignments/$examId")
 
             when (response.status) {
                 HttpStatusCode.OK -> {
@@ -115,7 +117,8 @@ class StudentRepositoryImpl(
                 responses = responses
             )
 
-            val response = client.post("${BASE_URL}student/submit/${type.name.lowercase()}") {
+            val response =
+                client.post("${BuildConfig.BASE_URL}student/submit/${type.name.lowercase()}") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -134,7 +137,4 @@ class StudentRepositoryImpl(
         }
     }
 
-    companion object {
-        const val BASE_URL = "http://localhost:3000/"
-    }
 }
