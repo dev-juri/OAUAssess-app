@@ -6,18 +6,15 @@ import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.models.Exam
 import com.oau.assess.models.ExamResponse
+import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.NetworkResult
 import com.oau.assess.utils.readFileAsByteArray
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import com.oau.assess.models.ExamData
-import com.oau.assess.models.UpdateExamResponse
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.js.Js
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.request.forms.append
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -31,9 +28,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.buildPacket
-import io.ktor.utils.io.core.writeFully
-import kotlinx.coroutines.awaitAll
 import kotlinx.serialization.json.Json
 import org.w3c.files.File
 
@@ -82,7 +76,7 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         return try {
             val fileBytes = readFileAsByteArray(tutorialListFile)
 
-            val response: CreateExamResponse = HttpClient(Js) {
+            val response = HttpClient(Js) {
                 install(ContentNegotiation) {
                     json(Json {
                         prettyPrint = true
@@ -111,9 +105,17 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                 }
             ) {
                 header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
-            }.body()
+            }
 
-            NetworkResult.Success(response)
+            if (response.status.isSuccess()) {
+                val response: CreateExamResponse = response.body()
+                NetworkResult.Success(response)
+            } else {
+                if (response.status.value == 401) {
+                    clearCurrentAdmin()
+                }
+                NetworkResult.Error("Failed to create MCQ exam: ${response.status}")
+            }
 
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error occurred")
@@ -134,6 +136,9 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                     NetworkResult.Error(examResponse.message)
                 }
             } else {
+                if (response.status.value == 401) {
+                    clearCurrentAdmin()
+                }
                 NetworkResult.Error("Failed to fetch exams: ${response.status}")
             }
         } catch (e: Exception) {
@@ -179,6 +184,9 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                 val updateResponse: UpdateExamResponse = response.body()
                 NetworkResult.Success(updateResponse)
             } else {
+                if (response.status.value == 401) {
+                    clearCurrentAdmin()
+                }
                 NetworkResult.Error("Failed to update MCQ exam: ${response.status}")
             }
         } catch (e: Exception) {
@@ -238,6 +246,9 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                 val updateResponse: UpdateExamResponse = response.body()
                 NetworkResult.Success(updateResponse)
             } else {
+                if (response.status.value == 401) {
+                    clearCurrentAdmin()
+                }
                 NetworkResult.Error("Failed to update OE exam: ${response.status}")
             }
         } catch (e: Exception) {

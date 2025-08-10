@@ -1,35 +1,95 @@
 package com.oau.assess.screens.admin.exam
 
-import androidx.compose.runtime.Composable
-import com.oau.assess.models.Exam
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oau.assess.models.Exam
+import com.oau.assess.screens.admin.exam.components.ExamFormFields
+import com.oau.assess.utils.pickFile
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateOeExamScreen(
     exam: Exam,
     onBackPressed: () -> Unit,
-    onQuestionsFileSelected: (ByteArray, String) -> Unit,
-    onAnswerKeyFileSelected: (ByteArray, String) -> Unit,
-    onUpdateExam: (ByteArray?, String?, ByteArray?, String?) -> Unit
+    onUpdateExam: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
+    viewModel: ExamUpdateViewModel = koinInject<ExamUpdateViewModel>()
 ) {
-    var selectedQuestionsFile by remember { mutableStateOf<Pair<ByteArray, String>?>(null) }
-    var selectedAnswerKeyFile by remember { mutableStateOf<Pair<ByteArray, String>?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+
+    val isAdminLoggedIn by viewModel.isAdminLoggedIn.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedFiles by viewModel.selectedFiles.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    // Handle UI state changes
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is ExamUpdateUiState.Success -> {
+                onUpdateExam()
+            }
+
+            else -> {}
+        }
+    }
+
+    // Handle navigation to login if not authenticated
+    LaunchedEffect(isAdminLoggedIn) {
+        if (!isAdminLoggedIn) {
+            onNavigateToLogin()
+        }
+    }
+
+    // Show error dialog
+    if (uiState is ExamUpdateUiState.Error) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Error") },
+            text = { Text((uiState as ExamUpdateUiState.Error).message) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Reset state when screen is first opened
+    LaunchedEffect(Unit) {
+        viewModel.resetState()
+    }
 
     Scaffold(
         topBar = {
@@ -38,20 +98,6 @@ fun UpdateOeExamScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { }) { Text("Dashboard") }
-                        TextButton(onClick = { }) { Text("Exams") }
-                        TextButton(onClick = { }) { Text("Assessments") }
-                        TextButton(onClick = { }) { Text("Results") }
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Person, contentDescription = "Profile")
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -74,117 +120,38 @@ fun UpdateOeExamScreen(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // Exam Title
+            // Disabled form fields (without questionCount)
+            ExamFormFields(exam = exam)
+
+            // Upload Questions Section
             Column(modifier = Modifier.padding(bottom = 16.dp)) {
                 Text(
-                    text = "Exam Title",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = exam.courseName,
-                    onValueChange = { },
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = Color.Black,
-                        disabledBorderColor = Color.Gray
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-            }
-
-            // Course Code
-            Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                Text(
-                    text = "Course Code",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = exam.courseCode,
-                    onValueChange = { },
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = Color.Black,
-                        disabledBorderColor = Color.Gray
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-            }
-
-            // Duration
-            Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                Text(
-                    text = "Duration (minutes)",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = exam.duration.toString(),
-                    onValueChange = { },
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = Color.Black,
-                        disabledBorderColor = Color.Gray
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-            }
-
-            // Exam Type
-            Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                Text(
-                    text = "Exam Type",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = exam.examType,
-                    onValueChange = { },
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = Color.Black,
-                        disabledBorderColor = Color.Gray
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-            }
-
-            // Upload Questions
-            Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                Text(
-                    text = "Upload Questions (PDF/DOCX)",
+                    text = "Upload Questions (Excel)",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 OutlinedButton(
                     onClick = {
-                        // File picker logic here
-                        // onQuestionsFileSelected will be called when file is selected
+                        pickFile(".xlsx,.xls") { file ->
+                            viewModel.selectQuestionsFile(file)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = Color(0xFF007BFF)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = !isLoading
                 ) {
                     Text(
-                        text = selectedQuestionsFile?.second ?: "Choose File",
+                        text = selectedFiles.questionsFile?.name ?: "Choose Questions File",
                         fontSize = 16.sp
                     )
                 }
             }
 
-            // Upload Answer Key
+            // Upload Answer Key Section
             Column(modifier = Modifier.padding(bottom = 32.dp)) {
                 Text(
                     text = "Upload Answer Key (PDF/DOCX)",
@@ -194,17 +161,19 @@ fun UpdateOeExamScreen(
                 )
                 OutlinedButton(
                     onClick = {
-                        // File picker logic here
-                        // onAnswerKeyFileSelected will be called when file is selected
+                        pickFile(".pdf,.docx,.txt") { file ->
+                            viewModel.selectAnswerKeyFile(file)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = Color(0xFF007BFF)
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = !isLoading
                 ) {
                     Text(
-                        text = selectedAnswerKeyFile?.second ?: "Choose File",
+                        text = selectedFiles.answerKeyFile?.name ?: "Choose Answer Key File",
                         fontSize = 16.sp
                     )
                 }
@@ -213,15 +182,9 @@ fun UpdateOeExamScreen(
             // Update Button
             Button(
                 onClick = {
-                    isLoading = true
-                    onUpdateExam(
-                        selectedQuestionsFile?.first,
-                        selectedQuestionsFile?.second,
-                        selectedAnswerKeyFile?.first,
-                        selectedAnswerKeyFile?.second
-                    )
+                    viewModel.updateOeExam(exam.id)
                 },
-                enabled = (selectedQuestionsFile != null || selectedAnswerKeyFile != null) && !isLoading,
+                enabled = (selectedFiles.questionsFile != null || selectedFiles.answerKeyFile != null) && !isLoading,
                 modifier = Modifier
                     .align(Alignment.End)
                     .height(48.dp)

@@ -1,9 +1,9 @@
 package com.oau.assess.screens.admin.exam
 
 import androidx.lifecycle.ViewModel
-import com.oau.assess.repositories.admin.AdminRepository
 import androidx.lifecycle.viewModelScope
 import com.oau.assess.models.CreateExamResponse
+import com.oau.assess.repositories.admin.AdminRepository
 import com.oau.assess.utils.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,12 +63,6 @@ class CreateExamViewModel(
         // Clear any previous errors
         _formErrors.value = FormErrors()
 
-        // Check if admin is logged in before proceeding
-        if (!_isAdminLoggedIn.value) {
-            _examCreationState.value = ExamCreationState.Error("Admin not logged in")
-            return
-        }
-
         viewModelScope.launch {
             _examCreationState.value = ExamCreationState.Loading
 
@@ -124,7 +118,7 @@ class CreateExamViewModel(
                 if (durationInt <= 0) {
                     errors.duration = "Duration must be greater than 0"
                 }
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 errors.duration = "Duration must be a valid number"
             }
         }
@@ -137,7 +131,7 @@ class CreateExamViewModel(
                 if (questionCountInt <= 0) {
                     errors.questionCount = "Question count must be greater than 0"
                 }
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 errors.questionCount = "Question count must be a valid number"
             }
         }
@@ -171,7 +165,6 @@ class CreateExamViewModel(
      */
     fun logoutAdmin() {
         adminRepository.clearCurrentAdmin()
-        _isAdminLoggedIn.value = false
         resetExamCreationState()
     }
 

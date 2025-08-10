@@ -164,7 +164,7 @@ fun AdminDashboardScreen(
                     exams = state.exams,
                     primaryBlue = primaryBlue,
                     onCreateExam = onCreateExam,
-                    onUpdateExam = onUpdateExam, // Pass the onUpdateExam callback
+                    onUpdateExam = onUpdateExam,
                     isLoading = isLoading
                 )
             }
@@ -307,7 +307,7 @@ private fun ExamListContent(
                             ExamRow(
                                 exam = exam,
                                 primaryBlue = primaryBlue,
-                                onUpdateExam = onUpdateExam // Pass the callback correctly
+                                onUpdateExam = onUpdateExam
                             )
                             if (exam != exams.last()) {
                                 HorizontalDivider(

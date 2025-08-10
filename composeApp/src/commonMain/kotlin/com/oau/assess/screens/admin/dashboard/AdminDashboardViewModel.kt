@@ -3,7 +3,6 @@ package com.oau.assess.screens.admin.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oau.assess.models.Exam
-import com.oau.assess.models.ExamData
 import com.oau.assess.repositories.admin.AdminRepository
 import com.oau.assess.utils.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +48,7 @@ class AdminDashboardViewModel(
         if (currentAdmin != null) {
             loadExams()
         } else {
+            logout()
             _isLoading.value = false
             _uiState.value = AdminDashboardUiState.Empty
         }
@@ -68,6 +68,7 @@ class AdminDashboardViewModel(
                     )
                 }
                 is NetworkResult.Error -> {
+                    loadLoggedInAdmin()
                     _uiState.value = AdminDashboardUiState.Error(result.message)
                 }
                 is NetworkResult.Loading -> {
