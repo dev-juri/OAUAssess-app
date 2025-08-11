@@ -420,7 +420,7 @@ private fun OpenEndedContent(
             OutlinedTextField(
                 value = currentAnswer,
                 onValueChange = { newValue ->
-                    if (newValue.length <= 3000) {
+                    if (newValue.length <= 2000) {
                         currentAnswer = newValue
                     }
                 },
@@ -448,7 +448,7 @@ private fun OpenEndedContent(
             )
 
             Text(
-                text = "${currentAnswer.length}/3000 characters",
+                text = "${currentAnswer.length}/2000 characters",
                 fontSize = 14.sp,
                 color = if (currentAnswer.length > 2400) Color.Red else Color.Gray,
                 modifier = Modifier
