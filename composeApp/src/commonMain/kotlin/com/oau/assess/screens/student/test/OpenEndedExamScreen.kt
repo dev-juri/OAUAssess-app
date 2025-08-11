@@ -126,6 +126,7 @@ fun OpenEndedExamScreen(
                 isTimerActive = false
                 onExamComplete(oeAnswers)
             }
+
             else -> {}
         }
     }
@@ -300,6 +301,7 @@ fun OpenEndedExamScreen(
                 containerColor = Color.White
             )
         }
+
         is SubmissionUiState.Error -> {
             AlertDialog(
                 onDismissRequest = {
@@ -340,6 +342,7 @@ fun OpenEndedExamScreen(
                 containerColor = Color.White
             )
         }
+
         else -> {}
     }
 }
@@ -413,10 +416,14 @@ private fun OpenEndedContent(
                 lineHeight = 26.sp
             )
 
-            // Answer Text Field
+
             OutlinedTextField(
                 value = currentAnswer,
-                onValueChange = { currentAnswer = it },
+                onValueChange = { newValue ->
+                    if (newValue.length <= 3000) {
+                        currentAnswer = newValue
+                    }
+                },
                 placeholder = {
                     Text(
                         text = "Type your answer here...",
@@ -440,13 +447,10 @@ private fun OpenEndedContent(
                 )
             )
 
-            // Word count display
             Text(
-                text = "${
-                    currentAnswer.split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
-                } words",
+                text = "${currentAnswer.length}/3000 characters",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = if (currentAnswer.length > 2400) Color.Red else Color.Gray,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
