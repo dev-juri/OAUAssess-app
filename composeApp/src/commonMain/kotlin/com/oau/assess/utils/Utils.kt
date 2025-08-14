@@ -78,3 +78,9 @@ suspend fun readFileAsByteArray(file: File): ByteArray {
         reader.readAsArrayBuffer(file)
     }
 }
+
+data class FileManager(
+    val fileName: String,
+    val mimeType: String,
+    val fileContent: ByteArray
+)

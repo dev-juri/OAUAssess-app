@@ -8,6 +8,7 @@ import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.models.Exam
 import com.oau.assess.models.ExamResponse
 import com.oau.assess.models.UpdateExamResponse
+import com.oau.assess.utils.FileManager
 import com.oau.assess.utils.NetworkResult
 import com.oau.assess.utils.readFileAsByteArray
 import io.ktor.client.HttpClient
@@ -200,19 +201,49 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
         templateFiles: List<File>
     ): NetworkResult<UpdateExamResponse> {
         return try {
-            val fileMap: HashMap<String, ByteArray> = HashMap()
+            val fileManagerList = mutableListOf<FileManager>()
 
             templateFiles.forEach { file ->
                 when {
-                    file.name.endsWith("docx") ->
-                        fileMap["application/vnd.openxmlformats-officedocument.wordprocessingml.document"] =
-                            readFileAsByteArray(file)
+                    file.name.endsWith("docx") -> {
+                        fileManagerList.add(
+                            FileManager(
+                                fileName = file.name,
+                                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                fileContent = readFileAsByteArray(file)
+                            )
+                        )
+                    }
 
-                    file.name.endsWith("xlsx") ->
-                        fileMap["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] =
-                            readFileAsByteArray(file)
+                    file.name.endsWith("pdf") -> {
+                        fileManagerList.add(
+                            FileManager(
+                                fileName = file.name,
+                                mimeType = "application/pdf",
+                                fileContent = readFileAsByteArray(file)
+                            )
+                        )
+                    }
 
-                    else -> fileMap["application/octet-stream"] = readFileAsByteArray(file)
+                    file.name.endsWith("xlsx") -> {
+                        fileManagerList.add(
+                            FileManager(
+                                fileName = file.name,
+                                mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                fileContent = readFileAsByteArray(file)
+                            )
+                        )
+                    }
+
+                    else -> {
+                        fileManagerList.add(
+                            FileManager(
+                                fileName = file.name,
+                                mimeType = "application/octet-stream",
+                                fileContent = readFileAsByteArray(file)
+                            )
+                        )
+                    }
                 }
             }
 
@@ -230,11 +261,11 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
             }.submitFormWithBinaryData(
                 url = "${BuildConfig.BASE_URL}exam/oe/$examId",
                 formData = formData {
-                    fileMap.forEach { file ->
+                    fileManagerList.forEach { file ->
 
-                        append("templates", file.value, Headers.build {
-                            append(HttpHeaders.ContentType, file.key)
-                            append(HttpHeaders.ContentDisposition, "filename=\"oe\"")
+                        append("templates", file.fileContent, Headers.build {
+                            append(HttpHeaders.ContentType, file.mimeType)
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.fileName}\"")
                         })
                     }
                 }
