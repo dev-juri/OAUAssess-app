@@ -2,6 +2,7 @@ package com.oau.assess.navigation
 
 
 import DashboardScreen
+import ExamReportScreen
 import LoginScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,7 +43,7 @@ fun AppNavigation(
             composable<Screen.Dashboard> {
                 DashboardScreen(onLogout = {
                     navController.navigate(Screen.Login) {
-                        popUpTo(0) { inclusive = true } // Clear entire navigation stack
+                        popUpTo(0) { inclusive = true }
                     }
                 }, onExamClick = { studentId, examId, examTitle, examType, duration ->
                     when (examType) {
@@ -77,7 +78,7 @@ fun AppNavigation(
                 McqExamScreen(
                     onLogout = {
                         navController.navigate(Screen.Login) {
-                            popUpTo(0) { inclusive = true } // Clear entire navigation stack
+                            popUpTo(0) { inclusive = true }
                         }
                     },
                     examId = mcqExam.examId,
@@ -98,7 +99,7 @@ fun AppNavigation(
                 OpenEndedExamScreen(
                     onLogout = {
                         navController.navigate(Screen.Login) {
-                            popUpTo(0) { inclusive = true } // Clear entire navigation stack
+                            popUpTo(0) { inclusive = true }
                         }
                     },
                     examId = openEndedExam.examId,
@@ -125,7 +126,8 @@ fun AppNavigation(
             }
 
             composable<Screen.AdminDashboard> {
-                AdminDashboardScreen(onLogout = {
+                AdminDashboardScreen(
+                    onLogout = {
                     navController.navigate(Screen.AdminLogin) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -159,7 +161,6 @@ fun AppNavigation(
                         }
 
                         else -> {
-                            // Default to MCQ if exam type is not recognized
                             navController.navigate(
                                 Screen.UpdateMCQExam(
                                     examId = exam.id,
@@ -172,7 +173,28 @@ fun AppNavigation(
                             )
                         }
                     }
-                })
+                    },
+                    onViewReport = { exam ->
+                        navController.navigate(
+                            Screen.ExamReport(
+                                examId = exam.id,
+                                examType = exam.examType
+                            )
+                        )
+                    })
+            }
+
+            composable<Screen.ExamReport> { backStackEntry ->
+                val exam = backStackEntry.toRoute<Screen.ExamReport>()
+                ExamReportScreen(
+                    examId = exam.examId,
+                    examType = exam.examType,
+                    onBackPressed = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
 
             composable<Screen.CreateExam> {
@@ -237,7 +259,7 @@ fun AppNavigation(
                     courseName = updateOpenEndedExam.courseName,
                     courseCode = updateOpenEndedExam.courseCode,
                     duration = updateOpenEndedExam.duration,
-                    questionCount = 0, // Not relevant for open-ended exams
+                    questionCount = 0,
                     examType = updateOpenEndedExam.examType,
                     questions = emptyList(),
                     createdAt = "",

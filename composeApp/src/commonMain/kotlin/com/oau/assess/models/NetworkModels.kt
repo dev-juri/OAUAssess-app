@@ -106,3 +106,24 @@ data class UpdateExamResponse(
     val success: Boolean,
     val message: String
 )
+
+@Serializable
+data class ExamReportResponse(
+    val success: Boolean,
+    val message: String,
+    val data: ExamReportData?
+)
+
+@Serializable
+data class ExamReportData(
+    val examTitle: String,
+    val examId: String,
+    val students: List<Student>
+)
+
+@Serializable
+data class Student(
+    val studentName: String,
+    val matricNumber: String,
+    val score: Int
+)

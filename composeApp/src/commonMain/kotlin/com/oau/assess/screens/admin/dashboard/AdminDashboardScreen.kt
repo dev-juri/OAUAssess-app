@@ -55,6 +55,7 @@ fun AdminDashboardScreen(
     onLogout: () -> Unit = {},
     onCreateExam: () -> Unit = {},
     onUpdateExam: (Exam) -> Unit = {},
+    onViewReport: (Exam) -> Unit = {},
     viewModel: AdminDashboardViewModel = koinInject<AdminDashboardViewModel>()
 ) {
 
@@ -165,6 +166,7 @@ fun AdminDashboardScreen(
                     primaryBlue = primaryBlue,
                     onCreateExam = onCreateExam,
                     onUpdateExam = onUpdateExam,
+                    onViewReport = onViewReport,
                     isLoading = isLoading
                 )
             }
@@ -183,6 +185,7 @@ private fun ExamListContent(
     primaryBlue: Color,
     onCreateExam: () -> Unit,
     onUpdateExam: (Exam) -> Unit,
+    onViewReport: (Exam) -> Unit,
     isLoading: Boolean
 ) {
     Column(
@@ -307,7 +310,8 @@ private fun ExamListContent(
                             ExamRow(
                                 exam = exam,
                                 primaryBlue = primaryBlue,
-                                onUpdateExam = onUpdateExam
+                                onUpdateExam = onUpdateExam,
+                                onViewReport = onViewReport
                             )
                             if (exam != exams.last()) {
                                 HorizontalDivider(
@@ -327,7 +331,8 @@ private fun ExamListContent(
 fun ExamRow(
     exam: Exam,
     primaryBlue: Color,
-    onUpdateExam: (Exam) -> Unit
+    onUpdateExam: (Exam) -> Unit,
+    onViewReport: (Exam) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -388,7 +393,7 @@ fun ExamRow(
         ) {
             // View/Export Button
             TextButton(
-                onClick = { /* Handle view/export */ },
+                onClick = { onViewReport(exam) },
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = primaryBlue
                 )

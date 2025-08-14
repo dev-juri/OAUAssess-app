@@ -9,6 +9,7 @@ import com.oau.assess.screens.admin.dashboard.AdminDashboardViewModel
 import com.oau.assess.screens.admin.exam.CreateExamViewModel
 import com.oau.assess.screens.admin.exam.ExamUpdateViewModel
 import com.oau.assess.screens.admin.login.AdminLoginViewModel
+import com.oau.assess.screens.admin.report.ExamReportViewModel
 import com.oau.assess.screens.student.dashboard.DashboardViewModel
 import com.oau.assess.screens.student.test.ExamViewModel
 import io.ktor.client.HttpClient
@@ -48,6 +49,7 @@ val repositoryModule = module {
     single<AdminDashboardViewModel> { AdminDashboardViewModel(get<AdminRepository>()) }
     single<CreateExamViewModel> { CreateExamViewModel(get<AdminRepository>()) }
     single<ExamUpdateViewModel> { ExamUpdateViewModel(get<AdminRepository>()) }
+    single<ExamReportViewModel> { ExamReportViewModel(get<AdminRepository>()) }
 }
 
 val appModule = listOf(

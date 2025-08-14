@@ -41,6 +41,13 @@ sealed class Screen {
     data object AdminDashboard : Screen()
 
     @Serializable
+    @SerialName("admin/exam-report")
+    data class ExamReport(
+        val examId: String,
+        val examType: String
+    ) : Screen()
+
+    @Serializable
     @SerialName("/admin/create-exam")
     data object CreateExam : Screen()
 

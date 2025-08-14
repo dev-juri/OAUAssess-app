@@ -4,7 +4,7 @@ import com.oau.assess.models.AdminLoginRequest
 import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.models.Exam
-import com.oau.assess.models.ExamData
+import com.oau.assess.models.ExamReportData
 import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.NetworkResult
 import org.w3c.files.File
@@ -32,4 +32,5 @@ interface AdminRepository {
 
     suspend fun updateOeExam(examId: String, templateFiles: List<File>): NetworkResult<UpdateExamResponse>
 
+    suspend fun getExamReport(examId: String): NetworkResult<ExamReportData>
 }

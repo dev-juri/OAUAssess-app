@@ -6,6 +6,8 @@ import com.oau.assess.models.AdminLoginResponse
 import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.models.Exam
+import com.oau.assess.models.ExamReportData
+import com.oau.assess.models.ExamReportResponse
 import com.oau.assess.models.ExamResponse
 import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.FileManager
@@ -23,10 +25,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -285,6 +289,36 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error occurred")
+        }
+    }
+
+    override suspend fun getExamReport(examId: String): NetworkResult<ExamReportData> {
+        return try {
+            val response = client.get {
+                url("${BuildConfig.BASE_URL}exam/$examId/report")
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val examReportResponse = response.body<ExamReportResponse>()
+                    if (examReportResponse.success) {
+                        NetworkResult.Success(examReportResponse.data!!)
+                    } else {
+                        if (response.status.value == 401) {
+                            clearCurrentAdmin()
+                        }
+                        NetworkResult.Error(examReportResponse.message)
+                    }
+                }
+
+                else -> {
+                    NetworkResult.Error("Failed to fetch exam report: ${response.status}")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message.toString())
         }
     }
 }
