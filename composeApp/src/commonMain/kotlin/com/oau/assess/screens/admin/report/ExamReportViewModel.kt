@@ -53,6 +53,75 @@ class ExamReportViewModel(
         }
     }
 
+    fun downloadExamReport(examId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isDownloadingReport = true,
+                downloadError = null
+            )
+
+            when (val result = adminRepository.downloadExamReport(examId)) {
+                is NetworkResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadingReport = false,
+                        reportDownloadSuccess = true
+                    )
+                }
+
+                is NetworkResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadingReport = false,
+                        downloadError = result.message
+                    )
+                }
+
+                is NetworkResult.Loading -> {
+                    _uiState.value = _uiState.value.copy(isDownloadingReport = true)
+                }
+            }
+        }
+    }
+
+    fun downloadExamScripts(examId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isDownloadingScripts = true,
+                downloadError = null
+            )
+
+            when (val result = adminRepository.downloadExamScripts(examId)) {
+                is NetworkResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadingScripts = false,
+                        scriptsDownloadSuccess = true
+                    )
+                }
+
+                is NetworkResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadingScripts = false,
+                        downloadError = result.message
+                    )
+                }
+
+                is NetworkResult.Loading -> {
+                    _uiState.value = _uiState.value.copy(isDownloadingScripts = true)
+                }
+            }
+        }
+    }
+
+    fun clearDownloadSuccess() {
+        _uiState.value = _uiState.value.copy(
+            reportDownloadSuccess = false,
+            scriptsDownloadSuccess = false
+        )
+    }
+
+    fun clearDownloadError() {
+        _uiState.value = _uiState.value.copy(downloadError = null)
+    }
+
     fun retryLoading() {
         val currentExamId = _uiState.value.examId
         if (currentExamId.isNotEmpty()) {
@@ -70,5 +139,10 @@ data class ExamReportUiState(
     val examTitle: String = "",
     val examId: String = "",
     val students: List<Student> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val isDownloadingReport: Boolean = false,
+    val isDownloadingScripts: Boolean = false,
+    val reportDownloadSuccess: Boolean = false,
+    val scriptsDownloadSuccess: Boolean = false,
+    val downloadError: String? = null
 )

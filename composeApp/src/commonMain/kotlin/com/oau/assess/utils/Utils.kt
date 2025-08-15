@@ -79,6 +79,28 @@ suspend fun readFileAsByteArray(file: File): ByteArray {
     }
 }
 
+fun extractFilenameFromHeader(contentDisposition: String?, isScoreSheet: Boolean): String =
+    contentDisposition?.let {
+        Regex("filename=\"([^\"]+)\"").find(it)?.groupValues?.get(1)
+    } ?: if (isScoreSheet) "exam_score_sheet.xlsx" else "exam_scripts.zip"
+
+@OptIn(ExperimentalWasmJsInterop::class)
+fun saveFile(data: JsArray<JsAny?>, filename: String) {
+    js(
+        """
+        const blob = new Blob([new Uint8Array(data)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        """
+    )
+}
+
 data class FileManager(
     val fileName: String,
     val mimeType: String,

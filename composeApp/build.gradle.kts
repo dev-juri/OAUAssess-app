@@ -111,10 +111,12 @@ kotlin {
 
         val wasmJsMain by getting {
             dependencies {
+                implementation(kotlin("stdlib-wasm-js"))
                 implementation("io.ktor:ktor-client-js:3.1.3")
                 //implementation("org.jetbrains.kotlinx:kotlinx-browser:0.0.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-browser:0.4")
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-js:2025.8.6")
+                implementation("org.jetbrains.kotlin:kotlin-stdlib-wasm-js:2.0.20")
             }
         }
     }

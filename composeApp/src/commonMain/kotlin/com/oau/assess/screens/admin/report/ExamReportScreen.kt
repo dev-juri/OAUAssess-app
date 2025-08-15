@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,6 +59,19 @@ fun ExamReportScreen(
         viewModel.loadExamReport(examId)
     }
 
+    // Handle download success/error messages
+    LaunchedEffect(uiState.reportDownloadSuccess) {
+        if (uiState.reportDownloadSuccess) {
+            viewModel.clearDownloadSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.scriptsDownloadSuccess) {
+        if (uiState.scriptsDownloadSuccess) {
+            viewModel.clearDownloadSuccess()
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))
     ) {
@@ -82,6 +97,39 @@ fun ExamReportScreen(
                 containerColor = Color.White
             )
         )
+
+        // Show download error if any
+        if (uiState.downloadError != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Download Error: ${uiState.downloadError}",
+                        fontSize = 14.sp,
+                        color = Color(0xFFD32F2F),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { viewModel.clearDownloadError() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFFD32F2F)
+                        )
+                    }
+                }
+            }
+        }
+
         // Header
         Card(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -247,24 +295,41 @@ fun ExamReportScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { /* Handle Excel download */ },
+                        onClick = { viewModel.downloadExamReport(examId) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFF27AE60)
-                        )
+                        ),
+                        enabled = !uiState.isDownloadingReport
                     ) {
-                        Text("Download Score Sheet (Excel)")
+                        if (uiState.isDownloadingReport) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFF27AE60),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Download Score Sheet (Excel)")
+                        }
                     }
 
                     OutlinedButton(
-                        enabled = examType == ScreenExamType.OeQuestion.name.toString(),
-                        onClick = { /* Handle ZIP download */ },
+                        enabled = examType == ScreenExamType.OeQuestion.name && !uiState.isDownloadingScripts,
+                        onClick = { viewModel.downloadExamScripts(examId) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFF3498DB)
                         )
                     ) {
-                        Text("Download Responses (Zip)")
+                        if (uiState.isDownloadingScripts) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFF3498DB),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Download Responses (Zip)")
+                        }
                     }
                 }
             }

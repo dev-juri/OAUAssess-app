@@ -33,4 +33,10 @@ interface AdminRepository {
     suspend fun updateOeExam(examId: String, templateFiles: List<File>): NetworkResult<UpdateExamResponse>
 
     suspend fun getExamReport(examId: String): NetworkResult<ExamReportData>
+
+    suspend fun downloadExamReport(examId: String): NetworkResult<String>
+
+    suspend fun downloadExamScripts(examId: String): NetworkResult<String>
+
+
 }

@@ -12,7 +12,9 @@ import com.oau.assess.models.ExamResponse
 import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.FileManager
 import com.oau.assess.utils.NetworkResult
+import com.oau.assess.utils.extractFilenameFromHeader
 import com.oau.assess.utils.readFileAsByteArray
+import com.oau.assess.utils.saveFile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.js.Js
@@ -26,6 +28,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -34,6 +37,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.toByteArray
+import js.typedarrays.toUint8Array
 import kotlinx.serialization.json.Json
 import org.w3c.files.File
 
@@ -321,4 +326,112 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
             NetworkResult.Error(e.message.toString())
         }
     }
+
+    @OptIn(ExperimentalWasmJsInterop::class)
+    override suspend fun downloadExamReport(examId: String): NetworkResult<String> {
+        return try {
+            val response = HttpClient(Js) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        prettyPrint = true
+                        isLenient = true
+                        ignoreUnknownKeys = true
+                    })
+                }
+                install(Logging) {
+                    level = LogLevel.INFO
+                }
+            }.get {
+                url("${BuildConfig.BASE_URL}exam/$examId/report/download")
+                contentType(ContentType.Application.Xlsx)
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
+                header(HttpHeaders.ContentDisposition, "")
+            }
+
+            if (response.status.isSuccess() || response.status == HttpStatusCode.NotModified) {
+                val contentDisposition = response.headers[HttpHeaders.ContentDisposition]
+                    ?: response.headers["content-disposition"] // Fallback to lowercase
+                    ?: response.headers.entries().firstOrNull {
+                        it.key.equals(
+                            "Content-Disposition",
+                            ignoreCase = true
+                        )
+                    }?.value?.firstOrNull()
+
+                println(response.headers)
+                val filename = extractFilenameFromHeader(contentDisposition, true)
+
+                val fileData = response.bodyAsChannel().toByteArray()
+
+                saveFile(fileData.toUint8Array().unsafeCast(), filename)
+
+                NetworkResult.Success("Successfully downloaded report: $filename")
+            } else {
+                when (response.status.value) {
+                    401 -> {
+                        clearCurrentAdmin()
+                        NetworkResult.Error("Unauthorized")
+                    }
+
+                    else -> NetworkResult.Error("Failed to download report: ${response.status.description}")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error occurred while downloading report")
+        }
+    }
+
+
+    @OptIn(ExperimentalWasmJsInterop::class)
+    override suspend fun downloadExamScripts(examId: String): NetworkResult<String> {
+        return try {
+            val response = HttpClient(Js) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        prettyPrint = true
+                        isLenient = true
+                        ignoreUnknownKeys = true
+                    })
+                }
+                install(Logging) {
+                    level = LogLevel.INFO
+                }
+            }.get {
+                url("${BuildConfig.BASE_URL}exam/$examId/report/download-scripts")
+                contentType(ContentType.Application.Zip)
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
+            }
+
+            if (response.status.isSuccess() || response.status == HttpStatusCode.NotModified) {
+                val contentDisposition = response.headers[HttpHeaders.ContentDisposition]
+                    ?: response.headers["content-disposition"]
+                    ?: response.headers.entries().firstOrNull {
+                        it.key.equals(
+                            "Content-Disposition",
+                            ignoreCase = true
+                        )
+                    }?.value?.firstOrNull()
+
+                val filename = extractFilenameFromHeader(contentDisposition, false)
+
+                val fileData = response.bodyAsChannel().toByteArray()
+
+                saveFile(fileData.toUint8Array().unsafeCast(), filename)
+
+                NetworkResult.Success("Successfully downloaded report: $filename")
+            } else {
+                when (response.status.value) {
+                    401 -> {
+                        clearCurrentAdmin()
+                        NetworkResult.Error("Unauthorized")
+                    }
+
+                    else -> NetworkResult.Error("Failed to download report: ${response.status.description}")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error occurred while downloading scripts")
+        }
+    }
+
 }
