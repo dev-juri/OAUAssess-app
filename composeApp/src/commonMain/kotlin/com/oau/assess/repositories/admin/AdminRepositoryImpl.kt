@@ -9,6 +9,10 @@ import com.oau.assess.models.Exam
 import com.oau.assess.models.ExamReportData
 import com.oau.assess.models.ExamReportResponse
 import com.oau.assess.models.ExamResponse
+import com.oau.assess.models.GradeExamRequest
+import com.oau.assess.models.GradeExamResponse
+import com.oau.assess.models.UgrResponse
+import com.oau.assess.models.UngradedExam
 import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.FileManager
 import com.oau.assess.utils.NetworkResult
@@ -345,7 +349,6 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
                 url("${BuildConfig.BASE_URL}exam/$examId/report/download")
                 contentType(ContentType.Application.Xlsx)
                 header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
-                header(HttpHeaders.ContentDisposition, "")
             }
 
             if (response.status.isSuccess() || response.status == HttpStatusCode.NotModified) {
@@ -431,6 +434,56 @@ class AdminRepositoryImpl(private val client: HttpClient) : AdminRepository {
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error occurred while downloading scripts")
+        }
+    }
+
+    override suspend fun getUngradedExams(): NetworkResult<List<UngradedExam>> {
+        return try {
+            val response = client.get {
+                url("${BuildConfig.BASE_URL}exam/ugr")
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val ugrResponse = response.body<UgrResponse>()
+                    if (ugrResponse.success) {
+                        NetworkResult.Success(ugrResponse.data!!)
+                    } else {
+                        if (response.status.value == 401) {
+                            clearCurrentAdmin()
+                        }
+                        NetworkResult.Error(ugrResponse.message)
+                    }
+                }
+
+                else -> {
+                    NetworkResult.Error("Failed to fetch exam report: ${response.status}")
+                }
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message.toString())
+        }
+    }
+
+    override suspend fun gradeExam(request: GradeExamRequest): NetworkResult<GradeExamResponse> {
+        return try {
+            val response = client.post("${BuildConfig.BASE_URL}exam/grade") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                header(HttpHeaders.Authorization, "Bearer $currentLoggedInAdmin")
+            }
+
+            if (response.status.isSuccess()) {
+                NetworkResult.Success(response.body() as GradeExamResponse)
+            } else {
+                if (response.status.value == 401) {
+                    NetworkResult.Error("Unauthorized")
+                }
+                NetworkResult.Error((response.body() as GradeExamResponse).message)
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error")
         }
     }
 

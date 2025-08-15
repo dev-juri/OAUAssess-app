@@ -127,3 +127,27 @@ data class Student(
     val matricNumber: String,
     val score: Int
 )
+
+@Serializable
+data class UgrResponse(
+    val message: String,
+    val success: Boolean,
+    val data: List<UngradedExam>?
+)
+
+@Serializable
+data class UngradedExam(
+    val examId: String,
+    val courseName: String,
+    val courseCode: String
+)
+
+@Serializable
+data class GradeExamRequest(
+    val examId: String
+)
+
+data class GradeExamResponse(
+    val message: String,
+    val success: Boolean
+)

@@ -8,6 +8,7 @@ import com.oau.assess.repositories.student.StudentRepositoryImpl
 import com.oau.assess.screens.admin.dashboard.AdminDashboardViewModel
 import com.oau.assess.screens.admin.exam.CreateExamViewModel
 import com.oau.assess.screens.admin.exam.ExamUpdateViewModel
+import com.oau.assess.screens.admin.grading.GradingViewModel
 import com.oau.assess.screens.admin.login.AdminLoginViewModel
 import com.oau.assess.screens.admin.report.ExamReportViewModel
 import com.oau.assess.screens.student.dashboard.DashboardViewModel
@@ -50,6 +51,7 @@ val repositoryModule = module {
     single<CreateExamViewModel> { CreateExamViewModel(get<AdminRepository>()) }
     single<ExamUpdateViewModel> { ExamUpdateViewModel(get<AdminRepository>()) }
     single<ExamReportViewModel> { ExamReportViewModel(get<AdminRepository>()) }
+    single<GradingViewModel> { GradingViewModel(get<AdminRepository>()) }
 }
 
 val appModule = listOf(

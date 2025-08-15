@@ -71,4 +71,8 @@ sealed class Screen {
         val duration: Int,
         val examType: String
     ) : Screen()
+
+    @Serializable
+    @SerialName("admin/ugr")
+    data object GradingScreen : Screen()
 }

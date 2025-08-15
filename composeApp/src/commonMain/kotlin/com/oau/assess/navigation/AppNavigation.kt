@@ -16,6 +16,7 @@ import com.oau.assess.screens.admin.dashboard.AdminDashboardScreen
 import com.oau.assess.screens.admin.exam.CreateExamScreen
 import com.oau.assess.screens.admin.exam.UpdateMcqExamScreen
 import com.oau.assess.screens.admin.exam.UpdateOeExamScreen
+import com.oau.assess.screens.admin.grading.GradingScreen
 import com.oau.assess.screens.admin.login.AdminLoginScreen
 import com.oau.assess.screens.student.test.McqExamScreen
 import com.oau.assess.screens.student.test.OpenEndedExamScreen
@@ -128,51 +129,51 @@ fun AppNavigation(
             composable<Screen.AdminDashboard> {
                 AdminDashboardScreen(
                     onLogout = {
-                    navController.navigate(Screen.AdminLogin) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }, onCreateExam = {
-                    navController.navigate(Screen.CreateExam)
-                }, onUpdateExam = { exam ->
-                    when (exam.examType) {
-                        ScreenExamType.McqQuestion.name -> {
-                            navController.navigate(
-                                Screen.UpdateMCQExam(
-                                    examId = exam.id,
-                                    courseName = exam.courseName,
-                                    courseCode = exam.courseCode,
-                                    duration = exam.duration,
-                                    questionCount = exam.questionCount,
-                                    examType = exam.examType
-                                )
-                            )
+                        navController.navigate(Screen.AdminLogin) {
+                            popUpTo(0) { inclusive = true }
                         }
+                    }, onCreateExam = {
+                        navController.navigate(Screen.CreateExam)
+                    }, onUpdateExam = { exam ->
+                        when (exam.examType) {
+                            ScreenExamType.McqQuestion.name -> {
+                                navController.navigate(
+                                    Screen.UpdateMCQExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        questionCount = exam.questionCount,
+                                        examType = exam.examType
+                                    )
+                                )
+                            }
 
-                        ScreenExamType.OeQuestion.name -> {
-                            navController.navigate(
-                                Screen.UpdateOpenEndedExam(
-                                    examId = exam.id,
-                                    courseName = exam.courseName,
-                                    courseCode = exam.courseCode,
-                                    duration = exam.duration,
-                                    examType = exam.examType
+                            ScreenExamType.OeQuestion.name -> {
+                                navController.navigate(
+                                    Screen.UpdateOpenEndedExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        examType = exam.examType
+                                    )
                                 )
-                            )
-                        }
+                            }
 
-                        else -> {
-                            navController.navigate(
-                                Screen.UpdateMCQExam(
-                                    examId = exam.id,
-                                    courseName = exam.courseName,
-                                    courseCode = exam.courseCode,
-                                    duration = exam.duration,
-                                    questionCount = exam.questionCount,
-                                    examType = exam.examType
+                            else -> {
+                                navController.navigate(
+                                    Screen.UpdateMCQExam(
+                                        examId = exam.id,
+                                        courseName = exam.courseName,
+                                        courseCode = exam.courseCode,
+                                        duration = exam.duration,
+                                        questionCount = exam.questionCount,
+                                        examType = exam.examType
+                                    )
                                 )
-                            )
+                            }
                         }
-                    }
                     },
                     onViewReport = { exam ->
                         navController.navigate(
@@ -181,7 +182,11 @@ fun AppNavigation(
                                 examType = exam.examType
                             )
                         )
-                    })
+                    },
+                    onNavigateToGrade = {
+                        navController.navigate(Screen.GradingScreen)
+                    }
+                )
             }
 
             composable<Screen.ExamReport> { backStackEntry ->
@@ -280,6 +285,21 @@ fun AppNavigation(
                         popUpTo(0) { inclusive = true }
                     }
                 })
+            }
+
+            composable<Screen.GradingScreen> {
+                GradingScreen(
+                    onBackClick = {
+                        navController.navigate(Screen.AdminDashboard) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onLogout = {
+                        navController.navigate(Screen.Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
             }
         }
 

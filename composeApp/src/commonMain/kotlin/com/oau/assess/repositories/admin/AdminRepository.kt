@@ -5,6 +5,9 @@ import com.oau.assess.models.AdminToken
 import com.oau.assess.models.CreateExamResponse
 import com.oau.assess.models.Exam
 import com.oau.assess.models.ExamReportData
+import com.oau.assess.models.GradeExamRequest
+import com.oau.assess.models.GradeExamResponse
+import com.oau.assess.models.UngradedExam
 import com.oau.assess.models.UpdateExamResponse
 import com.oau.assess.utils.NetworkResult
 import org.w3c.files.File
@@ -38,5 +41,7 @@ interface AdminRepository {
 
     suspend fun downloadExamScripts(examId: String): NetworkResult<String>
 
+    suspend fun getUngradedExams(): NetworkResult<List<UngradedExam>>
 
+    suspend fun gradeExam(request: GradeExamRequest): NetworkResult<GradeExamResponse>
 }
