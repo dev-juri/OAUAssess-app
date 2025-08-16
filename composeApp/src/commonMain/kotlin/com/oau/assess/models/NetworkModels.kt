@@ -147,6 +147,7 @@ data class GradeExamRequest(
     val examId: String
 )
 
+@Serializable
 data class GradeExamResponse(
     val message: String,
     val success: Boolean
